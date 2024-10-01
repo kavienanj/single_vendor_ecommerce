@@ -261,3 +261,19 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE AddStockQuantity(
+    IN variantID INT,
+    IN additionalQuantity INT
+)
+BEGIN
+    -- Update the stock by adding the new quantity to the existing quantity
+    UPDATE Inventory
+    SET quantity_available = quantity_available + additionalQuantity
+    WHERE variant_id = variantID;
+END$$
+
+DELIMITER ;
