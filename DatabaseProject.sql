@@ -247,3 +247,17 @@ END$$
 DELIMITER ;
 
 
+DELIMITER $$
+
+CREATE PROCEDURE UpdateProductPrice(
+    IN variantID INT,
+    IN newPrice FLOAT
+)
+BEGIN
+    -- Update the price of the product variant
+    UPDATE Variant
+    SET price = newPrice
+    WHERE variant_id = variantID;
+END$$
+
+DELIMITER ;
