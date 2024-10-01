@@ -1,3 +1,4 @@
+
 create schema DataBaseProject;
 use DataBaseProject;
 
@@ -79,6 +80,19 @@ CREATE TABLE `User` (
   on update cascade
 );
 
+CREATE TABLE `Variant` (
+  `variant_id` INT AUTO_INCREMENT,
+  `product_id` INT,
+  `name` VARCHAR(255),
+  `price` FLOAT,
+  `created_at` DATETIME,
+  `updated_at` DATETIME,
+  PRIMARY KEY (`variant_id`),
+  FOREIGN KEY (`product_id`) REFERENCES `Product`(`product_id`)
+  on update cascade
+  on delete restrict
+);
+
 CREATE TABLE `Cart` (
   -- `cart_item_id` INT AUTO_INCREMENT,
   `user_id` INT,
@@ -92,16 +106,6 @@ CREATE TABLE `Cart` (
   FOREIGN KEY (`variant_id`) REFERENCES `Variant`(`variant_id`)
   on delete cascade
   on update cascade
-);
-
-CREATE TABLE `Transaction` (
-  `transaction_id` INT AUTO_INCREMENT,
-  `order_id` INT,
-  `status` ENUM("Completed", "Failed"),
-  `transaction_date` DATETIME,
-  `amount` FLOAT,
-  PRIMARY KEY (`transaction_id`),
-  FOREIGN KEY (`order_id`) REFERENCES `Order`(`order_id`)
 );
 
 CREATE TABLE `Order` (
@@ -121,18 +125,18 @@ CREATE TABLE `Order` (
   
 );
 
-CREATE TABLE `Variant` (
-  `variant_id` INT AUTO_INCREMENT,
-  `product_id` INT,
-  `name` VARCHAR(255),
-  `price` FLOAT,
-  `created_at` DATETIME,
-  `updated_at` DATETIME,
-  PRIMARY KEY (`variant_id`),
-  FOREIGN KEY (`product_id`) REFERENCES `Product`(`product_id`)
-  on update cascade
-  on delete restrict
+CREATE TABLE `Transaction` (
+  `transaction_id` INT AUTO_INCREMENT,
+  `order_id` INT,
+  `status` ENUM("Completed", "Failed"),
+  `transaction_date` DATETIME,
+  `amount` FLOAT,
+  PRIMARY KEY (`transaction_id`),
+  FOREIGN KEY (`order_id`) REFERENCES `Order`(`order_id`)
 );
+
+
+
 
 CREATE TABLE `OrderItem` (
   `order_item_id` INT AUTO_INCREMENT,
@@ -196,3 +200,104 @@ END$$
 
 DELIMITER ;
 
+DELIMITER $$
+
+CREATE PROCEDURE CheckoutOrder(IN orderID INT)
+BEGIN
+    DECLARE variantID INT;
+    DECLARE orderQuantity INT;
+    DECLARE availableQuantity INT;
+    DECLARE done INT DEFAULT FALSE;
+    
+    -- Cursor to loop through all items in the order
+    DECLARE orderItems CURSOR FOR
+    SELECT variant_id, quantity
+    FROM OrderItem
+    WHERE order_id = orderID;
+
+    -- Handler to exit the loop
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN orderItems;
+
+    orderLoop: LOOP
+        FETCH orderItems INTO variantID, orderQuantity;
+        
+        IF done THEN
+            LEAVE orderLoop;
+        END IF;
+        
+        -- Check the available stock
+        SELECT quantity_available INTO availableQuantity
+        FROM Inventory
+        WHERE variant_id = variantID;
+
+        IF availableQuantity < orderQuantity THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for one or more items';
+        ELSE
+            -- Reduce the stock
+            UPDATE Inventory
+            SET quantity_available = quantity_available - orderQuantity
+            WHERE variant_id = variantID;
+        END IF;
+    END LOOP;
+
+    CLOSE orderItems;
+END$$
+
+DELIMITER ;
+DELIMITER $$
+
+CREATE PROCEDURE Get_Quarterly_Sales_By_Year (IN input_year INT)
+BEGIN
+    -- Create a temporary table for quarters
+    CREATE TEMPORARY TABLE Quarters (
+        quarter INT
+    );
+
+    -- Insert the quarters 1 to 4 into the temporary table
+    INSERT INTO Quarters (quarter) VALUES (1), (2), (3), (4);
+
+    -- Select the sales data for all quarters in the specified year
+    SELECT 
+        q.quarter,
+        IFNULL(SUM(o.total_amount), 0) AS total_sales
+    FROM 
+        Quarters q
+    LEFT JOIN 
+        `Order` o ON QUARTER(o.purchased_time) = q.quarter 
+                    AND YEAR(o.purchased_time) = input_year
+    GROUP BY 
+        q.quarter
+    ORDER BY 
+        q.quarter;
+
+    -- Drop the temporary table
+    DROP TEMPORARY TABLE Quarters;
+
+END$$
+
+DELIMITER ;
+
+
+
+
+
+
+INSERT INTO `Role` (`role_name`, `description`) 
+VALUES 
+    ('Admin', 'Has full access to the system'),
+    ('User', 'Registered customer with limited access'),
+    ('Guest', 'Unregistered customer with minimal access');
+INSERT INTO `User` (`first_name`, `last_name`, `email`, `password_hash`, `phone_number`, `is_guest`, `role_id`, `created_at`, `last_login`)
+VALUES 
+    ('John', 'Doe', 'john.doe@example.com', 'hashed_password_1', '1234567890', FALSE, 2, NOW(), NOW()),
+    ('Jane', 'Smith', 'jane.smith@example.com', 'hashed_password_2', '0987654321', FALSE, 2, NOW(), NULL),
+    ('Guest', 'User', 'guest.user@example.com', 'hashed_password_3', '1122334455', TRUE, 3, NOW(), NULL);
+INSERT INTO `Order` (`customer_id`, `contact_email`, `contact_phone`, `delivery_method`, `payment_method`, `total_amount`, `order_status`, `purchased_time`)
+VALUES 
+    (1, 'john.doe@example.com', '1234567890', 'delivery', 'card', 199.99, 'Completed', '2024-03-02'),
+    (2, 'jane.smith@example.com', '0987654321', 'store_pickup', 'Cash_on_delivery', 59.99, 'Shipped', '2024-09-04'),
+    (3, 'guest.user@example.com', '1122334455', 'delivery', 'Cash_on_delivery', 120.00, 'Processing', '2024-09-05');
+use DataBaseProject;
+CALL Get_Quarterly_Sales_By_Year(2024);
