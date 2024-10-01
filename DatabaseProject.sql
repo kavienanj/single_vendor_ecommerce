@@ -193,6 +193,33 @@ END IF;
 INSERT INTO Cart VALUES (user_id,variant_id,quantity);
 END$$
 
+CREATE PROCEDURE InsertCustomAttributeWithDefaultValues (
+    IN input_product_id INT,
+    IN input_attribute_name VARCHAR(255)
+)
+BEGIN
+    DECLARE new_attribute_id INT;
+
+    -- Step 1: Insert new custom attribute for the product
+    INSERT INTO Custom_Attribute (product_id, attribute_name)
+    VALUES (input_product_id, input_attribute_name);
+
+    -- Retrieve the new attribute_id generated
+    SET new_attribute_id = LAST_INSERT_ID();
+
+    -- Step 2: Insert 'not specified' for each variant of the product
+    INSERT INTO Custom_Attribute_Value (variant_id, attribute_id, attribute_value)
+    SELECT v.variant_id, new_attribute_id, 'Not specified'
+    FROM Variant v
+    WHERE v.product_id = input_product_id;
+
+END $$
+
+create procedure CHANGE_VARIANT_ATTRIBUTE_VALUE (variant_id INT, attribute_id INT, new_attribute_value VARCHAR(255))
+BEGIN
+	update Custom_Attribute_Value set attribute_value = new_attribute_value
+    where Custom_Attribute_Value.variant_id = variant_id and Custom_Attribute_Value.attribute_id = attribute_id;
+END$$
 
 DELIMITER ;
 
