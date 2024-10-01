@@ -123,8 +123,8 @@ CREATE TABLE `Order` (
 
 CREATE TABLE `Variant` (
   `variant_id` INT AUTO_INCREMENT,
-  `product_id` INT,
-  `name` VARCHAR(255),
+  `product_id` INT not null,
+  `name` VARCHAR(255) not null,
   `price` FLOAT,
   `created_at` DATETIME,
   `updated_at` DATETIME,
@@ -167,7 +167,7 @@ CREATE TABLE `Inventory` (
   `inventory_id` INT AUTO_INCREMENT,
   `warehouse_id` INT,
   `variant_id` INT,
-  `quantity_available` INT,
+  `quantity_available` INT not null,
   `last_updated` DATETIME,
   PRIMARY KEY (`inventory_id`),
   FOREIGN KEY (`warehouse_id`) REFERENCES `Warehouse`(`warehouse_id`)
@@ -221,5 +221,27 @@ BEGIN
     where Custom_Attribute_Value.variant_id = variant_id and Custom_Attribute_Value.attribute_id = attribute_id;
 END$$
 
-DELIMITER ;
 
+-- when a product is added, a variant should be added to variant table as well
+-- Otherwise adding a product is not allowed. 
+-- adding a product must always add a variant.
+create procedure ADD_PRODUCT (title VARCHAR(255) , description varchar(255) , sku varchar(255), weight float, warehause_id INT)
+begin
+	insert into Product values (default,title,description,sku,weight,warehouse_id,now(),now());
+END$$
+
+CREATE PROCEDURE ADD_VARIANT( product_id INT , name varchar(255), price float,quantity INT)
+begin
+	insert into Variant values (default,product_id,name,price,now(),now());
+    
+    set @warehouse_id = (
+		select warehouse_id 
+        from Product p
+        where p.product_id = product_id
+        );
+	set @variant_id = LAST_INSERT_ID();
+    
+    insert into Inventory values (default,@warehouse_id,@varinat_id,quantity,now());
+end$$
+
+DELIMITER ;
