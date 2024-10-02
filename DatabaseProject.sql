@@ -1,26 +1,32 @@
-
 create schema DataBaseProject;
 use DataBaseProject;
 
+-- Create Category Table
 CREATE TABLE `Category` (
   `category_id` INT AUTO_INCREMENT,
-  `category_name` VARCHAR(255) not null unique,
+  `category_name` VARCHAR(255) NOT NULL UNIQUE,
   `description` VARCHAR(255),
   PRIMARY KEY (`category_id`)
 );
 
+-- Table to store parent-child category relationships
 CREATE TABLE `ParentCategory_Match` (
   `category_id` INT,
   `parent_category_id` INT,
   PRIMARY KEY (`category_id`, `parent_category_id`),
   FOREIGN KEY (`category_id`) REFERENCES `Category`(`category_id`)
-  on update cascade
-  on delete cascade,
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
   FOREIGN KEY (`parent_category_id`) REFERENCES `Category`(`category_id`)
-  ON update cascade
-  on delete restrict
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT
 );
 
+-- Add indexes to improve performance
+CREATE INDEX idx_category_id ON `ParentCategory_Match` (`category_id`);
+CREATE INDEX idx_parent_category_id ON `ParentCategory_Match` (`parent_category_id`);
+
+-- Create Warehouse Table
 CREATE TABLE `Warehouse` (
   `warehouse_id` INT AUTO_INCREMENT,
   `location` VARCHAR(255) not null,
@@ -28,34 +34,94 @@ CREATE TABLE `Warehouse` (
   PRIMARY KEY (`warehouse_id`)
 );
 
+-- Create Product Table
 CREATE TABLE `Product` (
   `product_id` INT AUTO_INCREMENT,
-  `title` VARCHAR(255) NOT null,
+  `title` VARCHAR(255) NOT NULL,
   `description` VARCHAR(255),
   `sku` VARCHAR(255),
   `weight` FLOAT,
   -- `default_price` FLOAT,
   `warehouse_id` INT,
-  `created_at` DATETIME not null,
+  `created_at` DATETIME NOT NULL,
   `updated_at` DATETIME,
   PRIMARY KEY (`product_id`),
   FOREIGN KEY (`warehouse_id`) REFERENCES `Warehouse`(`warehouse_id`)
-  ON DELETE restrict
-  on update cascade
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE
 );
 
+-- Table to store many-to-many relationship between products and categories
 CREATE TABLE `Product_Category_Match` (
   `product_id` INT,
   `category_id` INT,
   PRIMARY KEY (`product_id`, `category_id`),
   FOREIGN KEY (`product_id`) REFERENCES `Product`(`product_id`)
-  on delete cascade
-  on update cascade,
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   FOREIGN KEY (`category_id`) REFERENCES `Category`(`category_id`)
-  on update cascade
-  on delete restrict
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE
 );
 
+-- Add indexes to improve performance
+CREATE INDEX idx_product_id ON `Product_Category_Match` (`product_id`);
+CREATE INDEX idx_category_id ON `Product_Category_Match` (`category_id`);
+
+-- Create Variant Table
+CREATE TABLE `Variant` (
+  `variant_id` INT AUTO_INCREMENT,
+  `product_id` INT,
+  `name` VARCHAR(255),
+  `image_url` VARCHAR(255),
+  `price` FLOAT,
+  `created_at` DATETIME NOT NULL,
+  `updated_at` DATETIME,
+  PRIMARY KEY (`variant_id`),
+  FOREIGN KEY (`product_id`) REFERENCES `Product`(`product_id`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE
+);
+
+-- Indexes to improve performance
+CREATE INDEX idx_variant_product_id ON `Variant` (`product_id`);
+
+-- Create Custom_Attribute Table
+CREATE TABLE `Custom_Attribute` (
+  `attribute_id` INT AUTO_INCREMENT,
+  `product_id` INT,
+  `attribute_name` VARCHAR(255),
+  PRIMARY KEY (`attribute_id`),
+  FOREIGN KEY (`product_id`) REFERENCES `Product`(`product_id`)
+);
+
+-- Create Custom_Attribute_Value Table
+CREATE TABLE `Custom_Attribute_Value` (
+  `variant_id` INT,
+  `attribute_id` INT,
+  `attribute_value` VARCHAR(255),
+  PRIMARY KEY (`variant_id`, `attribute_id`),
+  FOREIGN KEY (`variant_id`) REFERENCES `Variant`(`variant_id`),
+  FOREIGN KEY (`attribute_id`) REFERENCES `Custom_Attribute`(`attribute_id`)
+);
+
+-- Create Inventory Table
+CREATE TABLE `Inventory` (
+  `inventory_id` INT AUTO_INCREMENT,
+  `warehouse_id` INT,
+  `variant_id` INT,
+  `quantity_available` INT not null,
+  `last_updated` DATETIME,
+  PRIMARY KEY (`inventory_id`),
+  FOREIGN KEY (`warehouse_id`) REFERENCES `Warehouse`(`warehouse_id`)
+  on delete restrict
+  on update cascade,
+  FOREIGN KEY (`variant_id`) REFERENCES `Variant`(`variant_id`)
+  on delete restrict
+  on update cascade
+);
+
+-- Create Role Table
 CREATE TABLE `Role` (
   `role_id` INT AUTO_INCREMENT,
   `role_name` ENUM("Admin", "User", "Guest") NOT null,
@@ -63,6 +129,7 @@ CREATE TABLE `Role` (
   PRIMARY KEY (`role_id`)
 );
 
+-- Create User Table
 CREATE TABLE `User` (
   `user_id` INT AUTO_INCREMENT,
   `first_name` VARCHAR(255) not null,
@@ -76,21 +143,8 @@ CREATE TABLE `User` (
   `last_login` DATETIME,
   PRIMARY KEY (`user_id`),
   FOREIGN KEY (`role_id`) REFERENCES `Role`(`role_id`)
-  ON DELETE restrict
-  on update cascade
-);
-
-CREATE TABLE `Variant` (
-  `variant_id` INT AUTO_INCREMENT,
-  `product_id` INT,
-  `name` VARCHAR(255),
-  `price` FLOAT,
-  `created_at` DATETIME,
-  `updated_at` DATETIME,
-  PRIMARY KEY (`variant_id`),
-  FOREIGN KEY (`product_id`) REFERENCES `Product`(`product_id`)
-  on update cascade
-  on delete restrict
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE
 );
 
 CREATE TABLE `Cart` (
@@ -148,7 +202,7 @@ CREATE TABLE `DeliveryEstimate` (
   UNIQUE (`delivery_method_id`, `delivery_location_id`)
 );
 
--- Updated Order Table
+-- Create Order Table
 CREATE TABLE `Order` (
   `order_id` INT AUTO_INCREMENT,
   `customer_id` INT,
@@ -167,19 +221,6 @@ CREATE TABLE `Order` (
   FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`)
 );
 
-CREATE TABLE `Variant` (
-  `variant_id` INT AUTO_INCREMENT,
-  `product_id` INT not null,
-  `name` VARCHAR(255) not null,
-  `price` FLOAT,
-  `created_at` DATETIME,
-  `updated_at` DATETIME,
-  PRIMARY KEY (`variant_id`),
-  FOREIGN KEY (`product_id`) REFERENCES `Product`(`product_id`)
-  on update cascade
-  on delete restrict
-);
-
 CREATE TABLE `OrderItem` (
   `order_item_id` INT AUTO_INCREMENT,
   `order_id` INT,
@@ -192,51 +233,11 @@ CREATE TABLE `OrderItem` (
   FOREIGN KEY (`variant_id`) REFERENCES `Variant`(`variant_id`)
 );
 
-CREATE TABLE `Custom_Attribute` (
-  `attribute_id` INT AUTO_INCREMENT,
-  `product_id` INT,
-  `attribute_name` VARCHAR(255),
-  PRIMARY KEY (`attribute_id`),
-  FOREIGN KEY (`product_id`) REFERENCES `Product`(`product_id`)
-);
-
-CREATE TABLE `Custom_Attribute_Value` (
-  `variant_id` INT,
-  `attribute_id` INT,
-  `attribute_value` VARCHAR(255),
-  PRIMARY KEY (`variant_id`, `attribute_id`),
-  FOREIGN KEY (`variant_id`) REFERENCES `Variant`(`variant_id`),
-  FOREIGN KEY (`attribute_id`) REFERENCES `Custom_Attribute`(`attribute_id`)
-);
-
-CREATE TABLE `Inventory` (
-  `inventory_id` INT AUTO_INCREMENT,
-  `warehouse_id` INT,
-  `variant_id` INT,
-  `quantity_available` INT not null,
-  `last_updated` DATETIME,
-  PRIMARY KEY (`inventory_id`),
-  FOREIGN KEY (`warehouse_id`) REFERENCES `Warehouse`(`warehouse_id`)
-  on delete restrict
-  on update cascade,
-  FOREIGN KEY (`variant_id`) REFERENCES `Variant`(`variant_id`)
-  on delete restrict
-  on update cascade
-);
-
 DELIMITER $$
 
 CREATE PROCEDURE ADD_WAREHOUSE (location VARCHAR(255) , capacity INT)
 BEGIN
 INSERT INTO Warehouse VALUES (default,location,capacity);
-END$$
-
-CREATE PROCEDURE ADD_TO_CART (user_id INT , variant_d INT , quantity INT)
-BEGIN
-IF quantity IS NULL THEN
-	SET quantity = 1 ;
-END IF;
-INSERT INTO Cart VALUES (user_id,variant_id,quantity);
 END$$
 
 CREATE PROCEDURE InsertCustomAttributeWithDefaultValues (
@@ -409,41 +410,6 @@ BEGIN
         NOW()
     );
 END;
-
--- Add new Product.
-
-CREATE PROCEDURE AddNewProduct (
-    IN p_title VARCHAR(255),
-    IN p_description VARCHAR(255),
-    IN p_sku VARCHAR(255),
-    IN p_weight FLOAT,
-    IN p_default_price FLOAT,
-    IN p_warehouse_id INT,
-    IN p_variant_name VARCHAR(255),
-    IN p_variant_price FLOAT,
-    IN p_quantity_available INT
-)
-BEGIN
-    DECLARE new_product_id INT;
-    DECLARE new_variant_id INT;
-    
-    -- Insert into Product
-    INSERT INTO Product (title, description, sku, weight, default_price, warehouse_id, created_at, updated_at)
-    VALUES (p_title, p_description, p_sku, p_weight, p_default_price, p_warehouse_id, NOW(), NOW());
-    
-    SET new_product_id = LAST_INSERT_ID();
-    
-    -- Insert into Variant
-    INSERT INTO Variant (product_id, name, price, created_at, updated_at)
-    VALUES (new_product_id, p_variant_name, p_variant_price, NOW(), NOW());
-    
-    SET new_variant_id = LAST_INSERT_ID();
-    
-    -- Insert into Inventory
-    INSERT INTO Inventory (warehouse_id, variant_id, quantity_available, last_updated)
-    VALUES (p_warehouse_id, new_variant_id, p_quantity_available, NOW());
-END;
-
 
 -- Update inventory..
 
