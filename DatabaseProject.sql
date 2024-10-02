@@ -162,16 +162,6 @@ CREATE TABLE `Cart` (
   on update cascade
 );
 
-CREATE TABLE `Transaction` (
-  `transaction_id` INT AUTO_INCREMENT,
-  `order_id` INT,
-  `status` ENUM("Completed", "Failed"),
-  `transaction_date` DATETIME,
-  `amount` FLOAT,
-  PRIMARY KEY (`transaction_id`),
-  FOREIGN KEY (`order_id`) REFERENCES `Order`(`order_id`)
-);
-
 -- DeliveryMethod Table
 CREATE TABLE `DeliveryMethod` (
   `delivery_method_id` INT AUTO_INCREMENT,
@@ -190,17 +180,6 @@ CREATE TABLE `DeliveryLocation` (
   UNIQUE (`location_type`)
 );
 
--- DeliveryEstimate Table
-CREATE TABLE `DeliveryEstimate` (
-  `delivery_estimate_id` INT AUTO_INCREMENT,
-  `delivery_method_id` INT,
-  `delivery_location_id` INT,
-  `base_delivery_days` INT NOT NULL,
-  PRIMARY KEY (`delivery_estimate_id`),
-  FOREIGN KEY (`delivery_method_id`) REFERENCES `DeliveryMethod`(`delivery_method_id`),
-  FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`),
-  UNIQUE (`delivery_method_id`, `delivery_location_id`)
-);
 
 -- Create Order Table
 CREATE TABLE `Order` (
@@ -220,6 +199,33 @@ CREATE TABLE `Order` (
   FOREIGN KEY (`delivery_method_id`) REFERENCES `DeliveryMethod`(`delivery_method_id`),
   FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`)
 );
+
+CREATE TABLE `Transaction` (
+  `transaction_id` INT AUTO_INCREMENT,
+  `order_id` INT,
+  `status` ENUM("Completed", "Failed"),
+  `transaction_date` DATETIME,
+  `amount` FLOAT,
+  PRIMARY KEY (`transaction_id`),
+  FOREIGN KEY (`order_id`) REFERENCES `Order`(`order_id`)
+);
+
+
+
+
+-- DeliveryEstimate Table
+CREATE TABLE `DeliveryEstimate` (
+  `delivery_estimate_id` INT AUTO_INCREMENT,
+  `delivery_method_id` INT,
+  `delivery_location_id` INT,
+  `base_delivery_days` INT NOT NULL,
+  PRIMARY KEY (`delivery_estimate_id`),
+  FOREIGN KEY (`delivery_method_id`) REFERENCES `DeliveryMethod`(`delivery_method_id`),
+  FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`),
+  UNIQUE (`delivery_method_id`, `delivery_location_id`)
+);
+
+
 
 CREATE TABLE `OrderItem` (
   `order_item_id` INT AUTO_INCREMENT,
@@ -296,10 +302,15 @@ BEGIN
   INSERT INTO Product_Category_Match values (product_id, category_id);
 END$$
 
-CREATE PROCEDURE GetSubCategories(
-    IN input_category_id INT
-)
+CREATE FUNCTION GetSubCategories(
+    input_category_id INT
+) 
+RETURNS text -- Adjust the length as per your needs
+DETERMINISTIC
 BEGIN
+    -- Variable to hold the concatenated result
+    DECLARE subcategories_list text DEFAULT '';
+
     -- Use a recursive Common Table Expression (CTE)
     WITH RECURSIVE SubCategoryCTE AS (
         -- Anchor member: Select all immediate subcategories of the given category
@@ -322,68 +333,77 @@ BEGIN
         INNER JOIN 
             SubCategoryCTE sc ON pcm.parent_category_id = sc.category_id
     )
-    -- Select all subcategory IDs and their parent category IDs
-    SELECT c.category_id -- , c.category_name
+    -- Build a comma-separated list of subcategory IDs
+    SELECT GROUP_CONCAT(sc.category_id)
+    INTO subcategories_list
     FROM SubCategoryCTE sc
     JOIN Category c ON sc.category_id = c.category_id;
+
+    -- Return the comma-separated list
+    RETURN subcategories_list;
     
 END $$
 
-CREATE PROCEDURE GetProductsInSubCategories(
-    IN input_category_id INT
+CREATE FUNCTION GetProductsInSubCategories(
+    input_category_id INT
 )
+RETURNS text -- Adjust the length as needed
+DETERMINISTIC
 BEGIN
-    -- Temporary table to store the results of GetSubCategories
-    DROP TEMPORARY TABLE IF EXISTS TempSubCategories;
-    CREATE TEMPORARY TABLE TempSubCategories (
-        category_id INT
-    );
-    
-    -- Insert the results of the GetSubCategories procedure into the temporary table
-    INSERT INTO TempSubCategories (category_id)
-    SELECT sc.category_id
-    FROM (
-        -- This is where we call the GetSubCategories procedure
-        CALL GetSubCategories(input_category_id)
-    ) AS sc;
-    
-    -- Now, select all products belonging to these subcategories
-    SELECT p.product_id  -- , p.title, p.category_id
+    -- Declare a variable to store the concatenated product IDs
+    DECLARE product_list text DEFAULT '';
+
+    -- Retrieve subcategories using the GetSubCategories function
+    DECLARE subcategories_list text;
+    SET subcategories_list = GetSubCategories(input_category_id);
+
+    -- If subcategories list is empty, return NULL (no products)
+    IF subcategories_list IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    -- Retrieve product IDs belonging to the subcategories
+    SELECT GROUP_CONCAT(p.product_id)
+    INTO product_list
     FROM Product p
-    WHERE p.category_id IN (SELECT category_id FROM TempSubCategories);
+    WHERE FIND_IN_SET(p.category_id, subcategories_list);
 
-    -- Clean up the temporary table
-    DROP TEMPORARY TABLE IF EXISTS TempSubCategories;
-END$$
+    -- Return the concatenated list of product IDs
+    RETURN product_list;
+END $$
 
-
-CREATE PROCEDURE GetVariantsForSubCategories(
-    IN category_id INT
+CREATE FUNCTION GetVariantsForSubCategories(
+    category_id INT
 )
+RETURNS text -- Adjust the length as necessary
+DETERMINISTIC
 BEGIN
-    -- Create a temporary table to hold the product IDs returned by GetProductsInSubCategories
-    CREATE TEMPORARY TABLE IF NOT EXISTS TempProductIDs (
-        product_id INT
-    );
+    -- Variable to hold the concatenated result of variant IDs
+    DECLARE variant_list text DEFAULT '';
+
+    -- Temporary variable to hold product IDs
+    DECLARE product_ids text;
     
-    -- Step 1: Insert product IDs returned by GetProductsInSubCategories
-    INSERT INTO TempProductIDs (product_id)
-    SELECT product_id
-    FROM (
-        CALL GetProductsInSubCategories(category_id)
-    ) AS SubProducts;
+    -- Step 1: Get product IDs returned by GetProductsInSubCategories
+    SET product_ids = GetProductsInSubCategories(category_id);
     
-    -- Step 2: Select all variants for the products in TempProductIDs
-    SELECT v.variant_id --, v.product_id, v.name, v.price
+    -- If no product IDs found, return NULL
+    IF product_ids IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    -- Step 2: Get all variants for the products
+    SELECT GROUP_CONCAT(v.variant_id)
+    INTO variant_list
     FROM Variant v
-    WHERE v.product_id IN (SELECT product_id FROM TempProductIDs);
+    WHERE FIND_IN_SET(v.product_id, product_ids);
 
-    -- Step 3: Clean up by dropping the temporary table
-    DROP TEMPORARY TABLE IF EXISTS TempProductIDs;
-END$$
+    -- Step 3: Return the comma-separated list of variant IDs
+    RETURN variant_list;
+END $$
 
---Register the user
 
+-- Register the user
 CREATE PROCEDURE RegisterUser (
     IN p_first_name VARCHAR(255),
     IN p_last_name VARCHAR(255),
@@ -451,7 +471,7 @@ BEGIN
 END;
 
 
---remove from cart.
+-- remove from cart.
 
 CREATE PROCEDURE RemoveFromCart (
     IN p_user_id INT,
@@ -464,48 +484,48 @@ END;
 
 -- Get cart items
 
-CREATE PROCEDURE CheckoutOrder(IN orderID INT)
-BEGIN
-    DECLARE variantID INT;
-    DECLARE orderQuantity INT;
-    DECLARE availableQuantity INT;
-    DECLARE done INT DEFAULT FALSE;
-    
-    -- Cursor to loop through all items in the order
-    DECLARE orderItems CURSOR FOR
-    SELECT variant_id, quantity
-    FROM OrderItem
-    WHERE order_id = orderID;
+-- CREATE PROCEDURE CheckoutOrder(IN orderID INT)
+-- BEGIN
+--     DECLARE variantID INT;
+--     DECLARE orderQuantity INT;
+--     DECLARE availableQuantity INT;
+--     DECLARE done INT DEFAULT FALSE;
+--     
+--     -- Cursor to loop through all items in the order
+--     DECLARE orderItems CURSOR FOR
+--     SELECT variant_id, quantity
+--     FROM OrderItem
+--     WHERE order_id = orderID;
 
-    -- Handler to exit the loop
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+--     -- Handler to exit the loop
+--     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
-    OPEN orderItems;
+--     OPEN orderItems;
 
-    orderLoop: LOOP
-        FETCH orderItems INTO variantID, orderQuantity;
-        
-        IF done THEN
-            LEAVE orderLoop;
-        END IF;
-        
-        -- Check the available stock
-        SELECT quantity_available INTO availableQuantity
-        FROM Inventory
-        WHERE variant_id = variantID;
+--     orderLoop: LOOP
+--         FETCH orderItems INTO variantID, orderQuantity;
+--         
+--         IF done THEN
+--             LEAVE orderLoop;
+--         END IF;
+--         
+--         -- Check the available stock
+--         SELECT quantity_available INTO availableQuantity
+--         FROM Inventory
+--         WHERE variant_id = variantID;
 
-        IF availableQuantity < orderQuantity THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for one or more items';
-        ELSE
-            -- Reduce the stock
-            UPDATE Inventory
-            SET quantity_available = quantity_available - orderQuantity
-            WHERE variant_id = variantID;
-        END IF;
-    END LOOP;
+--         IF availableQuantity < orderQuantity THEN
+--             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for one or more items';
+--         ELSE
+--             -- Reduce the stock
+--             UPDATE Inventory
+--             SET quantity_available = quantity_available - orderQuantity
+--             WHERE variant_id = variantID;
+--         END IF;
+--     END LOOP;
 
-    CLOSE orderItems;
-END$$
+--     CLOSE orderItems;
+-- END$$
 
 -- Update product price
 
@@ -617,10 +637,10 @@ VALUES
     ('John', 'Doe', 'john.doe@example.com', 'hashed_password_1', '1234567890', FALSE, 2, NOW(), NOW()),
     ('Jane', 'Smith', 'jane.smith@example.com', 'hashed_password_2', '0987654321', FALSE, 2, NOW(), NULL),
     ('Guest', 'User', 'guest.user@example.com', 'hashed_password_3', '1122334455', TRUE, 3, NOW(), NULL);
-INSERT INTO `Order` (`customer_id`, `contact_email`, `contact_phone`, `delivery_method`, `payment_method`, `total_amount`, `order_status`, `purchased_time`)
-VALUES 
-    (1, 'john.doe@example.com', '1234567890', 'delivery', 'card', 199.99, 'Completed', '2024-03-02'),
-    (2, 'jane.smith@example.com', '0987654321', 'store_pickup', 'Cash_on_delivery', 59.99, 'Shipped', '2024-09-04'),
-    (3, 'guest.user@example.com', '1122334455', 'delivery', 'Cash_on_delivery', 120.00, 'Processing', '2024-09-05');
-use DataBaseProject;
-CALL Get_Quarterly_Sales_By_Year(2024);
+-- INSERT INTO `Order` (`customer_id`, `contact_email`, `contact_phone`, `delivery_method`, `payment_method`, `total_amount`, `order_status`, `purchased_time`)
+-- VALUES 
+--     (1, 'john.doe@example.com', '1234567890', 'delivery', 'card', 199.99, 'Completed', '2024-03-02'),
+--     (2, 'jane.smith@example.com', '0987654321', 'store_pickup', 'Cash_on_delivery', 59.99, 'Shipped', '2024-09-04'),
+--     (3, 'guest.user@example.com', '1122334455', 'delivery', 'Cash_on_delivery', 120.00, 'Processing', '2024-09-05');
+-- use DataBaseProject;
+-- CALL Get_Quarterly_Sales_By_Year(2024);
