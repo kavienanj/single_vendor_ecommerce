@@ -255,7 +255,7 @@ begin
     from Inventory i
     where i.variant_id = variant_id
   );
-  set @current_stock = @current_stock + adding_quantity
+  set @current_stock = @current_stock + adding_quantity;
   update Inventory i
   set quantity_available = @current_stock
   where i.variant_id = varinat_id;
@@ -266,10 +266,49 @@ BEGIN
   INSERT INTO Product_Category_Match values (product_id, category_id);
 END$$
 
-CREATE PROCEDURE GetSubCategories(
-    IN input_category_id INT
-)
+-- CREATE PROCEDURE GetSubCategories(
+--     IN input_category_id INT
+-- )
+-- BEGIN
+--     -- Use a recursive Common Table Expression (CTE)
+--     WITH RECURSIVE SubCategoryCTE AS (
+--         -- Anchor member: Select all immediate subcategories of the given category
+--         SELECT 
+--             pc.category_id,
+--             pc.parent_category_id
+--         FROM 
+--             ParentCategory_Match pc
+--         WHERE 
+--             pc.parent_category_id = input_category_id
+
+--         UNION ALL
+
+--         -- Recursive member: Find the subcategories of the current subcategory
+--         SELECT 
+--             pcm.category_id,
+--             pcm.parent_category_id
+--         FROM 
+--             ParentCategory_Match pcm
+--         INNER JOIN 
+--             SubCategoryCTE sc ON pcm.parent_category_id = sc.category_id
+--     )
+--     -- Select all subcategory IDs and their parent category IDs
+--     SELECT c.category_id -- , c.category_name
+--     FROM SubCategoryCTE sc
+--     JOIN Category c ON sc.category_id = c.category_id;
+--     
+-- END $$
+
+
+CREATE FUNCTION GetSubCategories(
+    input_category_id INT
+) 
+RETURNS VARCHAR(100000) -- Adjust the length as per your needs
+DETERMINISTIC
 BEGIN
+    -- Variable to hold the concatenated result
+    DECLARE subcategories_list VARCHAR(10000) DEFAULT '';
+
     -- Use a recursive Common Table Expression (CTE)
     WITH RECURSIVE SubCategoryCTE AS (
         -- Anchor member: Select all immediate subcategories of the given category
@@ -292,64 +331,138 @@ BEGIN
         INNER JOIN 
             SubCategoryCTE sc ON pcm.parent_category_id = sc.category_id
     )
-    -- Select all subcategory IDs and their parent category IDs
-    SELECT c.category_id -- , c.category_name
+    -- Build a comma-separated list of subcategory IDs
+    SELECT GROUP_CONCAT(sc.category_id)
+    INTO subcategories_list
     FROM SubCategoryCTE sc
     JOIN Category c ON sc.category_id = c.category_id;
+
+    -- Return the comma-separated list
+    RETURN subcategories_list;
     
 END $$
 
-CREATE PROCEDURE GetProductsInSubCategories(
-    IN input_category_id INT
+
+
+-- CREATE function GetProductsInSubCategories(
+--      input_category_id INT
+-- )
+-- RETURNS VARCHAR(100000) -- Adjust the length as per your needs
+-- DETERMINISTIC
+-- BEGIN
+--     -- Temporary table to store the results of GetSubCategories
+--     DROP TEMPORARY TABLE IF EXISTS TempSubCategories;
+--     CREATE TEMPORARY TABLE TempSubCategories (
+--         category_id INT
+--     );
+--     
+--     DECLARE product_list VARCHAR(10000) DEFAULT '';
+--     -- Insert the results of the GetSubCategories procedure into the temporary table
+--     INSERT INTO TempSubCategories (category_id)
+--     values (
+--          GetSubCategories(input_category_id)
+--     );
+--     
+--     -- Now, select all products belonging to these subcategories
+--     SELECT p.product_id  -- , p.title, p.category_id
+--     FROM Product p
+--     WHERE p.category_id IN (SELECT category_id FROM TempSubCategories);
+
+--     -- Clean up the temporary table
+--     -- DROP TEMPORARY TABLE IF EXISTS TempSubCategories;
+-- END$$
+
+
+
+DELIMITER $$
+
+CREATE FUNCTION GetProductsInSubCategories(
+    input_category_id INT
 )
+RETURNS VARCHAR(100000) -- Adjust the length as needed
+DETERMINISTIC
 BEGIN
-    -- Temporary table to store the results of GetSubCategories
-    DROP TEMPORARY TABLE IF EXISTS TempSubCategories;
-    CREATE TEMPORARY TABLE TempSubCategories (
-        category_id INT
-    );
-    
-    -- Insert the results of the GetSubCategories procedure into the temporary table
-    INSERT INTO TempSubCategories (category_id)
-    SELECT sc.category_id
-    FROM (
-        -- This is where we call the GetSubCategories procedure
-        CALL GetSubCategories(input_category_id)
-    ) AS sc;
-    
-    -- Now, select all products belonging to these subcategories
-    SELECT p.product_id  -- , p.title, p.category_id
+    -- Declare a variable to store the concatenated product IDs
+    DECLARE product_list VARCHAR(100000) DEFAULT '';
+
+    -- Retrieve subcategories using the GetSubCategories function
+    DECLARE subcategories_list VARCHAR(100000);
+    SET subcategories_list = GetSubCategories(input_category_id);
+
+    -- If subcategories list is empty, return NULL (no products)
+    IF subcategories_list IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    -- Retrieve product IDs belonging to the subcategories
+    SELECT GROUP_CONCAT(p.product_id)
+    INTO product_list
     FROM Product p
-    WHERE p.category_id IN (SELECT category_id FROM TempSubCategories);
+    WHERE FIND_IN_SET(p.category_id, subcategories_list);
 
-    -- Clean up the temporary table
-    DROP TEMPORARY TABLE IF EXISTS TempSubCategories;
-END$$
+    -- Return the concatenated list of product IDs
+    RETURN product_list;
+END $$
 
 
-CREATE PROCEDURE GetVariantsForSubCategories(
-    IN category_id INT
+
+
+-- CREATE PROCEDURE GetVariantsForSubCategories(
+--     IN category_id INT
+-- )
+-- BEGIN
+--     -- Create a temporary table to hold the product IDs returned by GetProductsInSubCategories
+--     CREATE TEMPORARY TABLE IF NOT EXISTS TempProductIDs (
+--         product_id INT
+--     );
+--     
+--     -- Step 1: Insert product IDs returned by GetProductsInSubCategories
+--     INSERT INTO TempProductIDs (product_id)
+--     SELECT product_id
+--     FROM (
+--         CALL GetProductsInSubCategories(category_id)
+--     ) AS SubProducts;
+--     
+--     -- Step 2: Select all variants for the products in TempProductIDs
+--     SELECT v.variant_id --, v.product_id, v.name, v.price
+--     FROM Variant v
+--     WHERE v.product_id IN (SELECT product_id FROM TempProductIDs);
+
+--     -- Step 3: Clean up by dropping the temporary table
+--     DROP TEMPORARY TABLE IF EXISTS TempProductIDs;
+-- END$$
+
+-- DELIMITER ;
+DELIMITER $$
+
+CREATE FUNCTION GetVariantsForSubCategories(
+    category_id INT
 )
+RETURNS VARCHAR(100000) -- Adjust the length as necessary
+DETERMINISTIC
 BEGIN
-    -- Create a temporary table to hold the product IDs returned by GetProductsInSubCategories
-    CREATE TEMPORARY TABLE IF NOT EXISTS TempProductIDs (
-        product_id INT
-    );
-    
-    -- Step 1: Insert product IDs returned by GetProductsInSubCategories
-    INSERT INTO TempProductIDs (product_id)
-    SELECT product_id
-    FROM (
-        CALL GetProductsInSubCategories(category_id)
-    ) AS SubProducts;
-    
-    -- Step 2: Select all variants for the products in TempProductIDs
-    SELECT v.variant_id --, v.product_id, v.name, v.price
-    FROM Variant v
-    WHERE v.product_id IN (SELECT product_id FROM TempProductIDs);
+    -- Variable to hold the concatenated result of variant IDs
+    DECLARE variant_list VARCHAR(100000) DEFAULT '';
 
-    -- Step 3: Clean up by dropping the temporary table
-    DROP TEMPORARY TABLE IF EXISTS TempProductIDs;
-END$$
+    -- Temporary variable to hold product IDs
+    DECLARE product_ids VARCHAR(100000);
+    
+    -- Step 1: Get product IDs returned by GetProductsInSubCategories
+    SET product_ids = GetProductsInSubCategories(category_id);
+    
+    -- If no product IDs found, return NULL
+    IF product_ids IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    -- Step 2: Get all variants for the products
+    SELECT GROUP_CONCAT(v.variant_id)
+    INTO variant_list
+    FROM Variant v
+    WHERE FIND_IN_SET(v.product_id, product_ids);
+
+    -- Step 3: Return the comma-separated list of variant IDs
+    RETURN variant_list;
+END $$
 
 DELIMITER ;
