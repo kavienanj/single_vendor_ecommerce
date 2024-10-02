@@ -230,6 +230,7 @@ begin
 	insert into Product values (default,title,description,sku,weight,warehouse_id,now(),now());
 END$$
 
+-- add variant
 CREATE PROCEDURE ADD_VARIANT( product_id INT , name varchar(255), price float,quantity INT)
 begin
 	insert into Variant values (default,product_id,name,price,now(),now());
@@ -243,6 +244,20 @@ begin
     
     insert into Inventory values (default,@warehouse_id,@varinat_id,quantity,now());
 end$$
+
+-- increase stock of a variant
+CREATE PROCEDURE ADD_STOCK_VARIANT (variant_id INT, adding_quantity INT)
+begin
+  SET @current_stock = (
+    select quantity_available
+    from Inventory i
+    where i.variant_id = variant_id
+  );
+  set @current_stock = @current_stock + adding_quantity
+  update Inventory i
+  set quantity_available = @current_stock
+  where i.variant_id = varinat_id;
+END$$
 
 CREATE PROCEDURE SET_CATEGORY (IN product_id INT, IN category_id INT)
 BEGIN
