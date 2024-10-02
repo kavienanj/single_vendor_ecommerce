@@ -104,21 +104,53 @@ CREATE TABLE `Transaction` (
   FOREIGN KEY (`order_id`) REFERENCES `Order`(`order_id`)
 );
 
+-- DeliveryMethod Table
+CREATE TABLE `DeliveryMethod` (
+  `delivery_method_id` INT AUTO_INCREMENT,
+  `method_name` ENUM('store_pickup', 'delivery') NOT NULL,
+  `description` VARCHAR(255),
+  PRIMARY KEY (`delivery_method_id`),
+  UNIQUE (`method_name`)
+);
+
+-- DeliveryLocation Table
+CREATE TABLE `DeliveryLocation` (
+  `delivery_location_id` INT AUTO_INCREMENT,
+  `location_type` ENUM('Main City', 'Non-Main City') NOT NULL,
+  `additional_days` INT DEFAULT 0,
+  PRIMARY KEY (`delivery_location_id`),
+  UNIQUE (`location_type`)
+);
+
+-- DeliveryEstimate Table
+CREATE TABLE `DeliveryEstimate` (
+  `delivery_estimate_id` INT AUTO_INCREMENT,
+  `delivery_method_id` INT,
+  `delivery_location_id` INT,
+  `base_delivery_days` INT NOT NULL,
+  PRIMARY KEY (`delivery_estimate_id`),
+  FOREIGN KEY (`delivery_method_id`) REFERENCES `DeliveryMethod`(`delivery_method_id`),
+  FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`),
+  UNIQUE (`delivery_method_id`, `delivery_location_id`)
+);
+
+-- Updated Order Table
 CREATE TABLE `Order` (
   `order_id` INT AUTO_INCREMENT,
   `customer_id` INT,
   `contact_email` VARCHAR(255),
   `contact_phone` VARCHAR(255),
-  `delivery_method` ENUM("store_pickup", "delivery"),
-  `payment_method` ENUM("Cash_on_delivery", "card"),
+  `delivery_method_id` INT,
+  `delivery_location_id` INT,
+  `payment_method` ENUM('Cash_on_delivery', 'card'),
   `total_amount` FLOAT,
-  `order_status` ENUM("Processing", "Shipped", "Completed"),
+  `order_status` ENUM('Processing', 'Shipped', 'Completed'),
   `purchased_time` DATETIME,
+  `delivery_estimate` INT,
   PRIMARY KEY (`order_id`),
-  FOREIGN KEY (`customer_id`) REFERENCES `User`(`user_id`) 
-  on update restrict
-  ON delete restrict
-  
+  FOREIGN KEY (`customer_id`) REFERENCES `User`(`user_id`),
+  FOREIGN KEY (`delivery_method_id`) REFERENCES `DeliveryMethod`(`delivery_method_id`),
+  FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`)
 );
 
 CREATE TABLE `Variant` (
@@ -334,5 +366,120 @@ BEGIN
     -- Step 3: Clean up by dropping the temporary table
     DROP TEMPORARY TABLE IF EXISTS TempProductIDs;
 END$$
+
+--Register the user
+
+CREATE PROCEDURE RegisterUser (
+    IN p_first_name VARCHAR(255),
+    IN p_last_name VARCHAR(255),
+    IN p_email VARCHAR(255),
+    IN p_password VARCHAR(255),
+    IN p_phone_number VARCHAR(255),
+    IN p_is_guest BOOLEAN
+)
+BEGIN
+    DECLARE hashed_password VARCHAR(255);
+    
+    -- Hash the password using SHA2 (you can use a more secure hashing function as needed)
+    SET hashed_password = SHA2(p_password, 256);
+    
+    INSERT INTO User (first_name, last_name, email, password_hash, phone_number, is_guest, role_id, created_at)
+    VALUES (
+        p_first_name,
+        p_last_name,
+        p_email,
+        hashed_password,
+        p_phone_number,
+        p_is_guest,
+        (SELECT role_id FROM Role WHERE role_name = 'User'), -- Assign default role
+        NOW()
+    );
+END;
+
+-- Add new Product.
+
+CREATE PROCEDURE AddNewProduct (
+    IN p_title VARCHAR(255),
+    IN p_description VARCHAR(255),
+    IN p_sku VARCHAR(255),
+    IN p_weight FLOAT,
+    IN p_default_price FLOAT,
+    IN p_warehouse_id INT,
+    IN p_variant_name VARCHAR(255),
+    IN p_variant_price FLOAT,
+    IN p_quantity_available INT
+)
+BEGIN
+    DECLARE new_product_id INT;
+    DECLARE new_variant_id INT;
+    
+    -- Insert into Product
+    INSERT INTO Product (title, description, sku, weight, default_price, warehouse_id, created_at, updated_at)
+    VALUES (p_title, p_description, p_sku, p_weight, p_default_price, p_warehouse_id, NOW(), NOW());
+    
+    SET new_product_id = LAST_INSERT_ID();
+    
+    -- Insert into Variant
+    INSERT INTO Variant (product_id, name, price, created_at, updated_at)
+    VALUES (new_product_id, p_variant_name, p_variant_price, NOW(), NOW());
+    
+    SET new_variant_id = LAST_INSERT_ID();
+    
+    -- Insert into Inventory
+    INSERT INTO Inventory (warehouse_id, variant_id, quantity_available, last_updated)
+    VALUES (p_warehouse_id, new_variant_id, p_quantity_available, NOW());
+END;
+
+
+-- Update inventory..
+
+CREATE PROCEDURE UpdateInventory (
+    IN p_variant_id INT,
+    IN p_quantity_change INT
+)
+BEGIN
+    UPDATE Inventory
+    SET 
+        quantity_available = quantity_available + p_quantity_change,
+        last_updated = NOW()
+    WHERE variant_id = p_variant_id;
+END;
+
+
+-- Add to cart
+
+CREATE PROCEDURE AddToCart (
+    IN p_user_id INT,
+    IN p_variant_id INT,
+    IN p_quantity INT
+)
+BEGIN
+    DECLARE existing_quantity INT;
+    
+    SELECT quantity INTO existing_quantity 
+    FROM Cart 
+    WHERE user_id = p_user_id AND variant_id = p_variant_id;
+    
+    IF existing_quantity IS NOT NULL THEN
+        UPDATE Cart
+        SET quantity = quantity + p_quantity
+        WHERE user_id = p_user_id AND variant_id = p_variant_id;
+    ELSE
+        INSERT INTO Cart (user_id, variant_id, quantity)
+        VALUES (p_user_id, p_variant_id, p_quantity);
+    END IF;
+END;
+
+
+--remove from cart.
+
+CREATE PROCEDURE RemoveFromCart (
+    IN p_user_id INT,
+    IN p_variant_id INT
+)
+BEGIN
+    DELETE FROM Cart
+    WHERE user_id = p_user_id AND variant_id = p_variant_id;
+END;
 
 DELIMITER ;
