@@ -104,20 +104,55 @@ CREATE TABLE `Transaction` (
   FOREIGN KEY (`order_id`) REFERENCES `Order`(`order_id`)
 );
 
+-- DeliveryMethod Table
+CREATE TABLE `DeliveryMethod` (
+  `delivery_method_id` INT AUTO_INCREMENT,
+  `method_name` ENUM('store_pickup', 'delivery') NOT NULL,
+  `description` VARCHAR(255),
+  PRIMARY KEY (`delivery_method_id`),
+  UNIQUE (`method_name`)
+);
+
+-- DeliveryLocation Table
+CREATE TABLE `DeliveryLocation` (
+  `delivery_location_id` INT AUTO_INCREMENT,
+  `location_type` ENUM('Main City', 'Non-Main City') NOT NULL,
+  `additional_days` INT DEFAULT 0,
+  PRIMARY KEY (`delivery_location_id`),
+  UNIQUE (`location_type`)
+);
+
+-- DeliveryEstimate Table
+CREATE TABLE `DeliveryEstimate` (
+  `delivery_estimate_id` INT AUTO_INCREMENT,
+  `delivery_method_id` INT,
+  `delivery_location_id` INT,
+  `base_delivery_days` INT NOT NULL,
+  PRIMARY KEY (`delivery_estimate_id`),
+  FOREIGN KEY (`delivery_method_id`) REFERENCES `DeliveryMethod`(`delivery_method_id`),
+  FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`),
+  UNIQUE (`delivery_method_id`, `delivery_location_id`)
+);
+
+-- Updated Order Table
 CREATE TABLE `Order` (
   `order_id` INT AUTO_INCREMENT,
   `customer_id` INT,
   `contact_email` VARCHAR(255),
   `contact_phone` VARCHAR(255),
-  `delivery_method` ENUM("store_pickup", "delivery"),
-  `payment_method` ENUM("Cash_on_delivery", "card"),
+  `delivery_method_id` INT,
+  `delivery_location_id` INT,
+  `payment_method` ENUM('Cash_on_delivery', 'card'),
   `total_amount` FLOAT,
-  `order_status` ENUM("Processing", "Shipped", "Completed"),
+  `order_status` ENUM('Processing', 'Shipped', 'Completed'),
   `purchased_time` DATETIME,
+  `delivery_estimate` INT,
   PRIMARY KEY (`order_id`),
-  FOREIGN KEY (`customer_id`) REFERENCES `User`(`user_id`) 
-  on update restrict
-  ON delete restrict
+  FOREIGN KEY (`customer_id`) REFERENCES `User`(`user_id`),
+  FOREIGN KEY (`delivery_method_id`) REFERENCES `DeliveryMethod`(`delivery_method_id`),
+  FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`)
+);
+
   
 );
 
