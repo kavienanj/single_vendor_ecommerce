@@ -79,6 +79,19 @@ CREATE TABLE `User` (
   on update cascade
 );
 
+CREATE TABLE `Variant` (
+  `variant_id` INT AUTO_INCREMENT,
+  `product_id` INT,
+  `name` VARCHAR(255),
+  `price` FLOAT,
+  `created_at` DATETIME,
+  `updated_at` DATETIME,
+  PRIMARY KEY (`variant_id`),
+  FOREIGN KEY (`product_id`) REFERENCES `Product`(`product_id`)
+  on update cascade
+  on delete restrict
+);
+
 CREATE TABLE `Cart` (
   -- `cart_item_id` INT AUTO_INCREMENT,
   `user_id` INT,
@@ -481,5 +494,76 @@ BEGIN
     DELETE FROM Cart
     WHERE user_id = p_user_id AND variant_id = p_variant_id;
 END;
+
+-- Get cart items
+
+CREATE PROCEDURE CheckoutOrder(IN orderID INT)
+BEGIN
+    DECLARE variantID INT;
+    DECLARE orderQuantity INT;
+    DECLARE availableQuantity INT;
+    DECLARE done INT DEFAULT FALSE;
+    
+    -- Cursor to loop through all items in the order
+    DECLARE orderItems CURSOR FOR
+    SELECT variant_id, quantity
+    FROM OrderItem
+    WHERE order_id = orderID;
+
+    -- Handler to exit the loop
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN orderItems;
+
+    orderLoop: LOOP
+        FETCH orderItems INTO variantID, orderQuantity;
+        
+        IF done THEN
+            LEAVE orderLoop;
+        END IF;
+        
+        -- Check the available stock
+        SELECT quantity_available INTO availableQuantity
+        FROM Inventory
+        WHERE variant_id = variantID;
+
+        IF availableQuantity < orderQuantity THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for one or more items';
+        ELSE
+            -- Reduce the stock
+            UPDATE Inventory
+            SET quantity_available = quantity_available - orderQuantity
+            WHERE variant_id = variantID;
+        END IF;
+    END LOOP;
+
+    CLOSE orderItems;
+END$$
+
+-- Update product price
+
+CREATE PROCEDURE UpdateProductPrice(
+    IN variantID INT,
+    IN newPrice FLOAT
+)
+BEGIN
+    -- Update the price of the product variant
+    UPDATE Variant
+    SET price = newPrice
+    WHERE variant_id = variantID;
+END$$
+
+-- Add stock quantity
+
+CREATE PROCEDURE AddStockQuantity(
+    IN variantID INT,
+    IN additionalQuantity INT
+)
+BEGIN
+    -- Update the stock by adding the new quantity to the existing quantity
+    UPDATE Inventory
+    SET quantity_available = quantity_available + additionalQuantity
+    WHERE variant_id = variantID;
+END$$
 
 DELIMITER ;
