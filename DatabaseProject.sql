@@ -244,4 +244,95 @@ begin
     insert into Inventory values (default,@warehouse_id,@varinat_id,quantity,now());
 end$$
 
+CREATE PROCEDURE SET_CATEGORY (IN product_id INT, IN category_id INT)
+BEGIN
+  INSERT INTO Product_Category_Match values (product_id, category_id);
+END$$
+
+CREATE PROCEDURE GetSubCategories(
+    IN input_category_id INT
+)
+BEGIN
+    -- Use a recursive Common Table Expression (CTE)
+    WITH RECURSIVE SubCategoryCTE AS (
+        -- Anchor member: Select all immediate subcategories of the given category
+        SELECT 
+            pc.category_id,
+            pc.parent_category_id
+        FROM 
+            ParentCategory_Match pc
+        WHERE 
+            pc.parent_category_id = input_category_id
+
+        UNION ALL
+
+        -- Recursive member: Find the subcategories of the current subcategory
+        SELECT 
+            pcm.category_id,
+            pcm.parent_category_id
+        FROM 
+            ParentCategory_Match pcm
+        INNER JOIN 
+            SubCategoryCTE sc ON pcm.parent_category_id = sc.category_id
+    )
+    -- Select all subcategory IDs and their parent category IDs
+    SELECT c.category_id -- , c.category_name
+    FROM SubCategoryCTE sc
+    JOIN Category c ON sc.category_id = c.category_id;
+    
+END $$
+
+CREATE PROCEDURE GetProductsInSubCategories(
+    IN input_category_id INT
+)
+BEGIN
+    -- Temporary table to store the results of GetSubCategories
+    DROP TEMPORARY TABLE IF EXISTS TempSubCategories;
+    CREATE TEMPORARY TABLE TempSubCategories (
+        category_id INT
+    );
+    
+    -- Insert the results of the GetSubCategories procedure into the temporary table
+    INSERT INTO TempSubCategories (category_id)
+    SELECT sc.category_id
+    FROM (
+        -- This is where we call the GetSubCategories procedure
+        CALL GetSubCategories(input_category_id)
+    ) AS sc;
+    
+    -- Now, select all products belonging to these subcategories
+    SELECT p.product_id  -- , p.title, p.category_id
+    FROM Product p
+    WHERE p.category_id IN (SELECT category_id FROM TempSubCategories);
+
+    -- Clean up the temporary table
+    DROP TEMPORARY TABLE IF EXISTS TempSubCategories;
+END$$
+
+
+CREATE PROCEDURE GetVariantsForSubCategories(
+    IN category_id INT
+)
+BEGIN
+    -- Create a temporary table to hold the product IDs returned by GetProductsInSubCategories
+    CREATE TEMPORARY TABLE IF NOT EXISTS TempProductIDs (
+        product_id INT
+    );
+    
+    -- Step 1: Insert product IDs returned by GetProductsInSubCategories
+    INSERT INTO TempProductIDs (product_id)
+    SELECT product_id
+    FROM (
+        CALL GetProductsInSubCategories(category_id)
+    ) AS SubProducts;
+    
+    -- Step 2: Select all variants for the products in TempProductIDs
+    SELECT v.variant_id --, v.product_id, v.name, v.price
+    FROM Variant v
+    WHERE v.product_id IN (SELECT product_id FROM TempProductIDs);
+
+    -- Step 3: Clean up by dropping the temporary table
+    DROP TEMPORARY TABLE IF EXISTS TempProductIDs;
+END$$
+
 DELIMITER ;
