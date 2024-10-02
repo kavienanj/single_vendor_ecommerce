@@ -193,6 +193,7 @@ END IF;
 INSERT INTO Cart VALUES (user_id,variant_id,quantity);
 END$$
 
+-- creating a custom attribute for a product and initiating the attribute values of the variants to be 'Not specified' 
 CREATE PROCEDURE InsertCustomAttributeWithDefaultValues (
     IN input_product_id INT,
     IN input_attribute_name VARCHAR(255)
@@ -215,6 +216,7 @@ BEGIN
 
 END $$
 
+-- change the custom attribute value of a variant
 create procedure CHANGE_VARIANT_ATTRIBUTE_VALUE (variant_id INT, attribute_id INT, new_attribute_value VARCHAR(255))
 BEGIN
 	update Custom_Attribute_Value set attribute_value = new_attribute_value
