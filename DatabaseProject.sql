@@ -31,8 +31,18 @@ CREATE TABLE `Warehouse` (
   `warehouse_id` INT AUTO_INCREMENT,
   `location` VARCHAR(255) not null,
   `capacity` INT NOT null,
+  `avaliable_capacity` INT,
   PRIMARY KEY (`warehouse_id`)
 );
+delimiter $$
+CREATE TRIGGER enter_avalible_capacity
+AFTER INSERT ON Warehouse
+FOR EACH ROW
+BEGIN
+    SET NEW.avaliable_capacity = NEW.capacity ;
+END$$
+delimiter ;
+
 
 -- Create Product Table
 CREATE TABLE `Product` (
@@ -42,13 +52,13 @@ CREATE TABLE `Product` (
   `sku` VARCHAR(255),
   `weight` FLOAT,
   -- `default_price` FLOAT,
-  `warehouse_id` INT,
+  -- `warehouse_id` INT,
   `created_at` DATETIME NOT NULL,
   `updated_at` DATETIME,
-  PRIMARY KEY (`product_id`),
-  FOREIGN KEY (`warehouse_id`) REFERENCES `Warehouse`(`warehouse_id`)
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE
+  PRIMARY KEY (`product_id`)
+  -- FOREIGN KEY (`warehouse_id`) REFERENCES `Warehouse`(`warehouse_id`)
+    -- ON DELETE RESTRICT
+    -- ON UPDATE CASCADE
 );
 
 -- Table to store many-to-many relationship between products and categories
@@ -77,6 +87,7 @@ CREATE TABLE `Variant` (
   `price` FLOAT,
   `created_at` DATETIME NOT NULL,
   `updated_at` DATETIME,
+   `interested` INT default 0,
   PRIMARY KEY (`variant_id`),
   FOREIGN KEY (`product_id`) REFERENCES `Product`(`product_id`)
     ON DELETE RESTRICT
@@ -111,6 +122,7 @@ CREATE TABLE `Inventory` (
   `warehouse_id` INT,
   `variant_id` INT,
   `quantity_available` INT not null,
+  `assigned_capacity` INT default 50,
   `last_updated` DATETIME,
   PRIMARY KEY (`inventory_id`),
   FOREIGN KEY (`warehouse_id`) REFERENCES `Warehouse`(`warehouse_id`)
@@ -161,6 +173,26 @@ CREATE TABLE `Cart` (
   on delete cascade
   on update cascade
 );
+
+delimiter $$
+create trigger increase_interested
+after insert on Cart
+for each row
+begin
+    update Variant 
+    set interested = interested + 1
+    where variant_id = new.variant_id ;
+end$$
+
+create trigger decrease_interested
+after delete on Cart
+for each row
+begin
+    update Variant 
+    set interested = interested - 1
+    where variant_id = old.variant_id ;
+end$$
+delimiter ;
 
 -- DeliveryMethod Table
 CREATE TABLE `DeliveryMethod` (
@@ -278,23 +310,23 @@ END$$
 -- when a product is added, a variant should be added to variant table as well
 -- Otherwise adding a product is not allowed. 
 -- adding a product must always add a variant.
-create procedure ADD_PRODUCT (title VARCHAR(255) , description varchar(255) , sku varchar(255), weight float, warehause_id INT)
+create procedure ADD_PRODUCT (title VARCHAR(255) , description varchar(255) , sku varchar(255), weight float)
 begin
 	insert into Product values (default,title,description,sku,weight,warehouse_id,now(),now());
 END$$
 
-CREATE PROCEDURE ADD_VARIANT( product_id INT , name varchar(255), price float,quantity INT)
+CREATE PROCEDURE ADD_VARIANT( product_id INT , name varchar(255), price float,quantity INT, warehouse_id INT,assigned_capacity INT)
 begin
 	insert into Variant values (default,product_id,name,price,now(),now());
     
-    set @warehouse_id = (
-		select warehouse_id 
-        from Product p
-        where p.product_id = product_id
-        );
+    -- set @warehouse_id = (
+-- 		select warehouse_id 
+--         from Product p
+--         where p.product_id = product_id
+--         );
 	set @variant_id = LAST_INSERT_ID();
     
-    insert into Inventory values (default,@warehouse_id,@varinat_id,quantity,now());
+    insert into Inventory values (default,warehouse_id,@varinat_id,quantity,assigned_capacity,now());
 end$$
 
 CREATE PROCEDURE SET_CATEGORY (IN product_id INT, IN category_id INT)
@@ -434,6 +466,7 @@ END;
 -- Update inventory..
 
 CREATE PROCEDURE UpdateInventory (
+	
     IN p_variant_id INT,
     IN p_quantity_change INT
 )
