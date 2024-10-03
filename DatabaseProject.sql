@@ -133,6 +133,16 @@ CREATE TABLE `Inventory` (
   on update cascade
 );
 
+-- DeliveryLocation Table
+CREATE TABLE `DeliveryLocation` (
+  `delivery_location_id` INT AUTO_INCREMENT,
+  `location_name` VARCHAR(255) NOT NULL,
+  `location_type` ENUM('store', 'city') NOT NULL DEFAULT 'city',
+  `with_stock_delivery_days` INT,
+  `without_stock_delivery_days` INT,
+  PRIMARY KEY (`delivery_location_id`),
+);
+
 -- Create Role Table
 CREATE TABLE `Role` (
   `role_id` INT AUTO_INCREMENT,
@@ -149,11 +159,15 @@ CREATE TABLE `User` (
   `email` VARCHAR(255) not null unique,
   `password_hash` VARCHAR(255) not null,
   `phone_number` VARCHAR(255) not null unique,
+  `delivery_location_id` INT,
   `is_guest` BOOLEAN not null,
   `role_id` INT not null,
   `created_at` DATETIME not null,
   `last_login` DATETIME,
   PRIMARY KEY (`user_id`),
+  FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE,
   FOREIGN KEY (`role_id`) REFERENCES `Role`(`role_id`)
     ON DELETE RESTRICT
     ON UPDATE CASCADE
@@ -195,23 +209,13 @@ end$$
 delimiter ;
 
 -- DeliveryMethod Table
-CREATE TABLE `DeliveryMethod` (
-  `delivery_method_id` INT AUTO_INCREMENT,
-  `method_name` ENUM('store_pickup', 'delivery') NOT NULL,
-  `description` VARCHAR(255),
-  PRIMARY KEY (`delivery_method_id`),
-  UNIQUE (`method_name`)
-);
-
--- DeliveryLocation Table
-CREATE TABLE `DeliveryLocation` (
-  `delivery_location_id` INT AUTO_INCREMENT,
-  `location_type` ENUM('Main City', 'Non-Main City') NOT NULL,
-  `additional_days` INT DEFAULT 0,
-  PRIMARY KEY (`delivery_location_id`),
-  UNIQUE (`location_type`)
-);
-
+-- CREATE TABLE `DeliveryMethod` (
+--   `delivery_method_id` INT AUTO_INCREMENT,
+--   `method_name` ENUM('store_pickup', 'delivery') NOT NULL,
+--   `description` VARCHAR(255),
+--   PRIMARY KEY (`delivery_method_id`),
+--   UNIQUE (`method_name`)
+-- );
 
 -- Create Order Table
 CREATE TABLE `Order` (
@@ -219,9 +223,9 @@ CREATE TABLE `Order` (
   `customer_id` INT,
   `contact_email` VARCHAR(255),
   `contact_phone` VARCHAR(255),
-  `delivery_method_id` INT,
+  `delivery_method` ENUM('store_pickup', 'delivery') NOT NULL,
   `delivery_location_id` INT,
-  `payment_method` ENUM('Cash_on_delivery', 'card'),
+  `payment_method` ENUM('cash_on_delivery', 'card'),
   `total_amount` FLOAT,
   `order_status` ENUM('Processing', 'Shipped', 'Completed'),
   `purchased_time` DATETIME,
