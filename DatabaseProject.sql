@@ -278,8 +278,96 @@ BEGIN
 END$$
 
 DELIMITER ;
+DELIMITER $$
+CREATE PROCEDURE GetTopSellingProducts(IN start_date DATETIME, IN end_date DATETIME)
+BEGIN
+    SELECT p.title, v.name, SUM(o.quantity) AS total_sales
+    FROM OrderItem o
+    JOIN Variant v ON v.variant_id = o.variant_id
+    JOIN Product p ON v.product_id = p.product_id
+    JOIN `Order` t ON t.order_id = o.order_id
+    WHERE t.purchased_time BETWEEN start_date AND end_date
+    GROUP BY p.title, v.name
+    ORDER BY total_sales DESC;
+END $$
 
+DELIMITER ;
+SELECT -- 3rd report
+    c.category_name,
+    COUNT(oi.order_item_id) AS total_orders
+FROM 
+    OrderItem oi
+JOIN 
+    Variant v ON oi.variant_id = v.variant_id
+JOIN 
+    Product p ON v.product_id = p.product_id
+JOIN 
+    Product_Category_Match pcm ON p.product_id = pcm.product_id
+JOIN 
+    Category c ON pcm.category_id = c.category_id
+GROUP BY 
+    c.category_id
+ORDER BY 
+    total_orders DESC
+LIMIT 1;
+DELIMITER //
 
+CREATE PROCEDURE GetTimePeriodWithMostInterest(
+    IN p_product_id INT,
+    IN p_period ENUM('daily', 'weekly', 'monthly')
+)
+BEGIN
+    -- Declare variable to hold the formatted date component
+    DECLARE period_format VARCHAR(10);
+
+    -- Set the format based on the input period
+    SET period_format = CASE
+        WHEN p_period = 'daily' THEN '%Y-%m-%d'
+        WHEN p_period = 'weekly' THEN '%Y-%u' -- Week of year
+        WHEN p_period = 'monthly' THEN '%Y-%m'
+        ELSE '%Y-%m-%d' -- Default to daily if input is invalid
+    END;
+
+    -- Select the time period with the most interest for the given product
+    SELECT
+        DATE_FORMAT(v.created_at, period_format) AS time_period,
+        SUM(v.interested) AS total_interest
+    FROM
+        Variant v
+    WHERE
+        v.product_id = p_product_id
+    GROUP BY
+        time_period
+    ORDER BY
+        total_interest DESC
+    LIMIT 1;  -- Return only the time period with the highest interest
+END //
+
+DELIMITER ;
+
+CALL GetTimePeriodWithMostInterest(1, 'monthly');  -- Example: for product_id 1, find the month with the most interest
+SELECT --customer order report
+    u.user_id,
+    CONCAT(u.first_name, ' ', u.last_name) AS customer_name,
+    u.email,
+    o.order_id,
+    o.purchased_time,
+    o.order_status,
+    o.total_amount,
+    v.name AS variant_name,
+    oi.quantity,
+    oi.price AS item_price,
+    (oi.quantity * oi.price) AS total_price
+FROM 
+    User u
+JOIN 
+    `Order` o ON u.user_id = o.customer_id
+JOIN 
+    OrderItem oi ON o.order_id = oi.order_id
+JOIN 
+    Variant v ON oi.variant_id = v.variant_id
+ORDER BY 
+    o.purchased_time DESC;
 
 
 
