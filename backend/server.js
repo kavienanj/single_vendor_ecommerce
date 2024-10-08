@@ -7,7 +7,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // Import product routes
-const productRoutes = require('./productRoutes');
+const productRoutes = require('./controllers/products.controller');
 
 // Create an Express app
 const app = express();

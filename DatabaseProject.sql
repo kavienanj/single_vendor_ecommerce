@@ -232,7 +232,7 @@ CREATE TABLE `Order` (
   `delivery_estimate` INT,
   PRIMARY KEY (`order_id`),
   FOREIGN KEY (`customer_id`) REFERENCES `User`(`user_id`),
-  FOREIGN KEY (`delivery_method_id`) REFERENCES `DeliveryMethod`(`delivery_method_id`),
+ 
   FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`)
 );
 
@@ -256,7 +256,7 @@ CREATE TABLE `DeliveryEstimate` (
   `delivery_location_id` INT,
   `base_delivery_days` INT NOT NULL,
   PRIMARY KEY (`delivery_estimate_id`),
-  FOREIGN KEY (`delivery_method_id`) REFERENCES `DeliveryMethod`(`delivery_method_id`),
+  
   FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`),
   UNIQUE (`delivery_method_id`, `delivery_location_id`)
 );

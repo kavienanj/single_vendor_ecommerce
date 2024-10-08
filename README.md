@@ -86,13 +86,19 @@ Before you begin, ensure you have the following installed:
 
 ```
 ├── backend/
-│   ├── db.js               # Database connection logic
-│   ├── productRoutes.js     # Routes related to product management
-│   ├── server.js            # Main server setup and middleware
-│   └── .env                 # Environment variables
-├── .gitignore               # Git ignore file
-├── package.json             # Project dependencies and scripts
-└── README.md                # Project documentation
+│   ├── controllers/            # API controllers
+│   │   └── products.controller.js
+│   ├── models/                 # Database models
+│   │   └── products.model.js
+│   ├── routes/                 # Express routing
+│   ├── db.js                   # Database connection logic
+│   ├── server.js               # Main server setup and middleware
+│   └── .env                    # Environment variables
+├── frontend/                   # Frontend folder (if applicable)
+├── .gitignore                  # Git ignore file
+├── package.json                # Project dependencies and scripts
+├── setup.sql                   # SQL script for initial database setup
+└── README.md                   # Project documentation
 ```
 
 ## Available Scripts
