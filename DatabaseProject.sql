@@ -1,5 +1,5 @@
-create schema DataBaseProject;
-use DataBaseProject;
+create schema ECommerceDatabase;
+use ECommerceDatabase;
 
 -- Create Category Table
 CREATE TABLE `Category` (

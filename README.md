@@ -65,10 +65,10 @@ Before you begin, ensure you have the following installed:
 
 6. **Run the server**
 
-   To start the server, run the following command:
+   To start the server, and listen for changes, run the following command:
 
    ```bash
-   node server.js
+   npm run dev
    ```
 
    The server will start on the port defined in the `server.js` file (by default, port 3000).
@@ -86,10 +86,15 @@ Before you begin, ensure you have the following installed:
 
 ```
 ├── backend/
+│   ├── routes/                 # Express routing
+│   │   └── products.routes.js
 │   ├── controllers/            # API controllers
 │   │   └── products.controller.js
 │   ├── models/                 # Database models
 │   │   └── products.model.js
+│   ├── db/                            # Migration and seed files
+|   |   ├── init_db.sql                # SQL script for initial database setup
+│   |   └── create_products_table.sql  # SQL script for creating products table
 │   ├── routes/                 # Express routing
 │   ├── db.js                   # Database connection logic
 │   ├── server.js               # Main server setup and middleware
