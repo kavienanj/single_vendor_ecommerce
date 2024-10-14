@@ -140,7 +140,7 @@ CREATE TABLE `DeliveryLocation` (
   `location_type` ENUM('store', 'city') NOT NULL DEFAULT 'city',
   `with_stock_delivery_days` INT,
   `without_stock_delivery_days` INT,
-  PRIMARY KEY (`delivery_location_id`),
+  PRIMARY KEY (`delivery_location_id`)
 );
 
 -- Create Role Table
@@ -208,15 +208,6 @@ begin
 end$$
 delimiter ;
 
--- DeliveryMethod Table
--- CREATE TABLE `DeliveryMethod` (
---   `delivery_method_id` INT AUTO_INCREMENT,
---   `method_name` ENUM('store_pickup', 'delivery') NOT NULL,
---   `description` VARCHAR(255),
---   PRIMARY KEY (`delivery_method_id`),
---   UNIQUE (`method_name`)
--- );
-
 -- Create Order Table
 CREATE TABLE `Order` (
   `order_id` INT AUTO_INCREMENT,
@@ -227,27 +218,16 @@ CREATE TABLE `Order` (
   `delivery_location_id` INT,
   `payment_method` ENUM('cash_on_delivery', 'card'),
   `total_amount` FLOAT,
-  `order_status` ENUM('Processing', 'Shipped', 'Completed'),
+  `order_status` ENUM('Processing', 'Shipped', 'Completed', 'Failed'),
   `purchased_time` DATETIME,
   `delivery_estimate` INT,
+  `created_at` DATETIME,
+  `updated_at` DATETIME,
   PRIMARY KEY (`order_id`),
   FOREIGN KEY (`customer_id`) REFERENCES `User`(`user_id`),
  
   FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`)
 );
-
-CREATE TABLE `Transaction` (
-  `transaction_id` INT AUTO_INCREMENT,
-  `order_id` INT,
-  `status` ENUM("Completed", "Failed"),
-  `transaction_date` DATETIME,
-  `amount` FLOAT,
-  PRIMARY KEY (`transaction_id`),
-  FOREIGN KEY (`order_id`) REFERENCES `Order`(`order_id`)
-);
-
-
-
 
 -- DeliveryEstimate Table
 CREATE TABLE `DeliveryEstimate` (
@@ -260,8 +240,6 @@ CREATE TABLE `DeliveryEstimate` (
   FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`),
   UNIQUE (`delivery_method_id`, `delivery_location_id`)
 );
-
-
 
 CREATE TABLE `OrderItem` (
   `order_item_id` INT AUTO_INCREMENT,

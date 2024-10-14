@@ -6,8 +6,10 @@ const dotenv = require('dotenv');
 // Load environment variables
 dotenv.config();
 
-// Import product routes
+// Import routes
+const authRoutes = require('./routes/auth.routes');
 const productRoutes = require('./routes/products.routes');
+const orderRoutes = require('./routes/orders.routes');
 
 // Create an Express app
 const app = express();
@@ -20,6 +22,8 @@ app.use(bodyParser.json());
 
 // Use the product routes
 app.use('/', productRoutes);
+app.use('/', authRoutes);
+app.use('/', orderRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 3000;
