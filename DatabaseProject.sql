@@ -36,7 +36,7 @@ CREATE TABLE `Warehouse` (
 );
 delimiter $$
 CREATE TRIGGER enter_avalible_capacity
-AFTER INSERT ON Warehouse
+BEFORE INSERT ON Warehouse
 FOR EACH ROW
 BEGIN
     SET NEW.avaliable_capacity = NEW.capacity ;
