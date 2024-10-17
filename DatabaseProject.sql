@@ -659,3 +659,21 @@ VALUES
 --     (3, 'guest.user@example.com', '1122334455', 'delivery', 'Cash_on_delivery', 120.00, 'Processing', '2024-09-05');
 -- use DataBaseProject;
 -- CALL Get_Quarterly_Sales_By_Year(2024);
+
+USE `ecommercedatabase`;
+DROP procedure IF EXISTS `ShowCartofUser`;
+
+DELIMITER $$
+USE `ecommercedatabase`$$
+CREATE PROCEDURE `ShowCartofUser` (
+	IN p_user_id INT
+)
+BEGIN
+	select *
+    from variant 
+    where variant_id in (
+    select variant_id from cart where user_id = p_user_id
+    );
+END$$
+
+DELIMITER ;

@@ -25,7 +25,7 @@ app.use(bodyParser.json());
 app.use('/', productRoutes);
 app.use('/', authRoutes);
 app.use('/', orderRoutes);
-app.use('/:userId/cart', cartRoutes); // can be changed accordingly  (the first argument '/' to '/something')
+app.use('/', cartRoutes); // can't be changed accordingly  (the first argument '/' to '/something')
 
 // Start the server
 const PORT = process.env.PORT || 3000;

@@ -1,15 +1,59 @@
 const model = require('../models/cart.model');
 
 exports.addtoCart = async (req, res) => {
-    const { userId } = req.params;
-    
+    const userId = parseInt(req.params.userId);
+    const { variant_id, quantity } = req.body;
     try {
-        await model.addtoCart({ title, description, sku, weight });
+        await model.addtoCart({ userId, variant_id, quantity });
         res.status(200).json({
-            message: 'Product added successfully!',
+            message: 'Added to cart successfully!',
         });
     } catch (err) {
-        console.error('Error inserting product:', err);
-        res.status(500).json({ message: 'Error inserting product', error: err.message });
+        console.error('Error inserting into cart:', err);
+        res.status(500).json({ message: 'Error inserting into cart.', error: err.message });
+    }
+};
+
+
+exports.showCart = async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    try {
+        const response = await model.showCart({ userId });
+        res.status(200).json(response);
+    } catch (err) {
+        console.error('Error showing the cart:', err);
+        res.status(500).json({ message: 'Error showing the cart.', error: err.message });
+    }
+};
+
+exports.deletefromCart = async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const { variant_id} = req.body;
+    try {
+        await model.deletefromCart({ userId, variant_id });
+        res.status(200).json({
+            message: `UserId ${userId} deleted variant_id ${variant_id} from cart successfully!` ,
+        });
+    } catch (err) {
+        console.error('Error deleting from cart:', err);
+        res.status(500).json({ message: 'Error deleting cart.', error: err.message });
+    }
+};
+
+exports.setQuantity = async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const { variant_id,quantity} = req.body;
+
+    try {
+        await model.setQuantity({ userId,variant_id,quantity });
+        res.status(200).json({
+            message: 'Cart updated successfully!',
+        });
+    } catch (err) {
+        console.error('Error updating Cart:', err);
+        res.status(500).json({
+            message: 'Error updating Cart',
+            error: err.message
+        });
     }
 };
