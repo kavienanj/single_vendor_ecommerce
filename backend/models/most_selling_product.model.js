@@ -24,7 +24,7 @@ exports.getProductsBySales = (start_date, end_date) => {
 
 /*const db = require('../db');
 
-exports.getProductsBySales = (startDate, endDate) => {
+exports.getProductsBySales = (start_date, end_date) => {
     return new Promise((resolve, reject) => {
         const query = `
             SELECT p.title, v.name, SUM(o.quantity) AS total_sales
@@ -35,14 +35,15 @@ exports.getProductsBySales = (startDate, endDate) => {
             WHERE t.purchased_time BETWEEN ? AND ?
             GROUP BY p.title, v.name
             ORDER BY total_sales DESC
-            
         `;
 
-        db.query(query, [startDate, endDate], (err, result) => {
+        db.query(query, [start_date, end_date], (err, result) => {
             if (err) {
                 return reject(err);
             }
-            resolve(result);
+            resolve(result);  // Return all products, filtering will be done in the controller
         });
     });
 };*/
+
+

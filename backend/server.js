@@ -10,6 +10,49 @@ dotenv.config();
 const authRoutes = require('./routes/auth.routes');
 const productRoutes = require('./routes/products.routes');
 const orderRoutes = require('./routes/orders.routes');
+const salesReportRoutes = require('./routes/sales_report.routes');
+const mostSellingProductRoutes = require('./routes/most_selling_product.routes');
+const mostOrdersRoutes = require('./routes/most_orders.routes');
+const mostInterestRoutes = require('./routes/most_interest.routes');
+const customerReportRoutes = require('./routes/customer_report.routes');
+
+// Create an Express app
+const app = express();
+
+// Enable CORS for all routes
+app.use(cors());
+
+// Middleware to parse JSON bodies
+app.use(bodyParser.json());
+
+// Use the routes
+app.use('/', productRoutes);
+app.use('/', authRoutes);
+app.use('/', orderRoutes);
+app.use('/', salesReportRoutes);
+app.use('/', mostSellingProductRoutes);
+app.use('/', mostOrdersRoutes);
+app.use('/', customerReportRoutes);
+app.use('/', mostInterestRoutes);
+
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
+/*const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const dotenv = require('dotenv');
+
+// Load environment variables
+dotenv.config();
+
+// Import routes
+const authRoutes = require('./routes/auth.routes');
+const productRoutes = require('./routes/products.routes');
+const orderRoutes = require('./routes/orders.routes');
 const report1Routes = require('./routes/report1.routes');
 const report2Routes = require('./routes/report2.routes');
 const report3Routes = require('./routes/report3.routes');
@@ -39,4 +82,4 @@ app.use('/', report4Routes);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-});
+});*/
