@@ -19,4 +19,8 @@ router.delete('/:userId/cart/', cartController.deletefromCart);
 // delete the whole quatity (complete row from the cart)
 router.get('/:userId/cart/', cartController.showCart);
 
+// after click on checkout button
+// might be false functionality
+router.post('/:userId/cart/checkout', cartController.checkout);
+
 module.exports = router;

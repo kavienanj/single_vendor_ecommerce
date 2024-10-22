@@ -57,3 +57,17 @@ exports.setQuantity = async (req, res) => {
         });
     }
 };
+
+exports.checkout = async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const order_items = req.body;
+    try {
+        await model.checkout({ userId , order_items });
+        res.status(200).json({
+            message: 'Checkout successful!'
+        });
+    } catch (err) {
+        console.error('Error checking out:', err);
+        res.status(500).json({ message: 'Error checking out.', error: err.message });
+    }
+};
