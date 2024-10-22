@@ -23,4 +23,9 @@ router.get('/:userId/cart/', cartController.showCart);
 // might be false functionality
 router.post('/:userId/cart/checkout', cartController.checkout);
 
+router.post('/:userId/cart/checkout/placeOrder', cartController.placeOrder);
+
+// get the payment info for autofill
+router.get('/:userId/cart/checkout/placeOrder', cartController.getPaymentInfo);
+
 module.exports = router;

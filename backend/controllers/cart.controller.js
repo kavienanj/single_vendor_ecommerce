@@ -71,3 +71,43 @@ exports.checkout = async (req, res) => {
         res.status(500).json({ message: 'Error checking out.', error: err.message });
     }
 };
+
+exports.placeOrder = async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const { 
+        order_id, 
+        contact_email, 
+        contact_phone, 
+        delivery_method, 
+        delivery_location_id, 
+        payment_method, 
+        delivery_estimate 
+    } = req.body;
+    try {
+        await model.placeOrder({ userId, 
+            order_id, 
+            contact_email, 
+            contact_phone, 
+            delivery_method, 
+            delivery_location_id, 
+            payment_method, 
+            delivery_estimate });
+        res.status(200).json({
+            message: 'Order placing successful!'
+        });
+    } catch (err) {
+        console.error('Error placing order :', err);
+        res.status(500).json({ message: 'Error placing order.', error: err.message });
+    }
+}
+
+exports.getPaymentInfo = async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    try {
+        const response = await model.getPaymentInfo({ userId });
+        res.status(200).json(response);
+    } catch (err) {
+        console.error('Error getting payment info:', err);
+        res.status(500).json({ message: 'Error getting payment info.', error: err.message });
+    }
+};

@@ -23,6 +23,7 @@ exports.createOrder = ({ customerId, contactEmail, contactPhone, deliveryMethod,
     return runQuery(query, [customerId, contactEmail, contactPhone, deliveryMethod, deliveryLocationId, paymentMethod, totalAmount, orderStatus, purchasedTime, deliveryEstimate, createdAt]);
 };
 
+// for admin to see all orders
 exports.getAllOrders = () => {
     const query = `SELECT * FROM Order`;
     return runQuery(query);
@@ -35,6 +36,9 @@ exports.getOrderById = (orderId) => {
 };
 
 // Function to update an order
+// this should allowed only for pending orders
+// OTHERWISE NOT!!!
+// THIS IS NOT PRACTICAL        
 exports.updateOrder = ({ orderId, orderStatus, deliveryEstimate, updatedAt = new Date() }) => {
     const query = `
         UPDATE Order SET order_status = ?, delivery_estimate = ?, updated_at = ? WHERE order_id = ?`;
@@ -42,6 +46,8 @@ exports.updateOrder = ({ orderId, orderStatus, deliveryEstimate, updatedAt = new
 };
 
 // Function to delete an order
+// this should allowed only for pending orders
+// OTHERWISE NOT!!!
 exports.deleteOrder = (orderId) => {
     const query = `DELETE FROM Order WHERE order_id = ?`;
     return runQuery(query, [orderId]);
