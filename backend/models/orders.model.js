@@ -46,3 +46,10 @@ exports.deleteOrder = (orderId) => {
     const query = `DELETE FROM Order WHERE order_id = ?`;
     return runQuery(query, [orderId]);
 };
+
+// Function to get orders by user ID
+exports.getUserOrders = (userId) => {
+    const query = `SELECT * FROM Order WHERE customer_id = ?`;
+    return runQuery(query, [userId]);
+};
+
