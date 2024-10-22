@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth.routes');
 const productRoutes = require('./routes/products.routes');
 const orderRoutes = require('./routes/orders.routes');
 const reportRoutes = require('./routes/reports.routes');
+const deliveryLocationRoutes = require('./routes/delivery_location.routes');
 
 
 // Create an Express app
@@ -27,6 +28,7 @@ app.use('/', productRoutes);
 app.use('/', authRoutes);
 app.use('/', orderRoutes);
 app.use('/', reportRoutes);
+app.use('/', deliveryLocationRoutes);
 
 
 // Start the server
