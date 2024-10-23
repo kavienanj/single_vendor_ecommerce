@@ -253,6 +253,55 @@ CREATE TABLE `OrderItem` (
   FOREIGN KEY (`variant_id`) REFERENCES `Variant`(`variant_id`)
 );
 
+-- these triggers are for the total amount in the order table
+DELIMITER //
+
+-- Trigger for INSERT and UPDATE on OrderItem
+CREATE TRIGGER update_total_amount_after_insert_update
+AFTER INSERT ON OrderItem
+FOR EACH ROW
+BEGIN
+  DECLARE total FLOAT;
+  SELECT SUM(price * quantity) INTO total
+  FROM OrderItem
+  WHERE order_id = NEW.order_id;
+  
+  UPDATE `Order`
+  SET total_amount = total
+  WHERE order_id = NEW.order_id;
+END //
+
+CREATE TRIGGER update_total_amount_after_update
+AFTER UPDATE ON OrderItem
+FOR EACH ROW
+BEGIN
+  DECLARE total FLOAT;
+  SELECT SUM(price * quantity) INTO total
+  FROM OrderItem
+  WHERE order_id = NEW.order_id;
+  
+  UPDATE `Order`
+  SET total_amount = total
+  WHERE order_id = NEW.order_id;
+END //
+
+-- Trigger for DELETE on OrderItem
+CREATE TRIGGER update_total_amount_after_delete
+AFTER DELETE ON OrderItem
+FOR EACH ROW
+BEGIN
+  DECLARE total FLOAT;
+  SELECT SUM(price * quantity) INTO total
+  FROM OrderItem
+  WHERE order_id = OLD.order_id;
+  
+  UPDATE `Order`
+  SET total_amount = total
+  WHERE order_id = OLD.order_id;
+END //
+
+DELIMITER ;
+
 DELIMITER $$
 
 CREATE PROCEDURE ADD_WAREHOUSE (location VARCHAR(255) , capacity INT)
@@ -659,3 +708,21 @@ VALUES
 --     (3, 'guest.user@example.com', '1122334455', 'delivery', 'Cash_on_delivery', 120.00, 'Processing', '2024-09-05');
 -- use DataBaseProject;
 -- CALL Get_Quarterly_Sales_By_Year(2024);
+
+USE `ecommercedatabase`;
+DROP procedure IF EXISTS `ShowCartofUser`;
+
+DELIMITER $$
+USE `ecommercedatabase`$$
+CREATE PROCEDURE `ShowCartofUser` (
+	IN p_user_id INT
+)
+BEGIN
+	select *
+    from variant 
+    where variant_id in (
+    select variant_id from cart where user_id = p_user_id
+    );
+END$$
+
+DELIMITER ;

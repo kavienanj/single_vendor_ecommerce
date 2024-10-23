@@ -16,6 +16,7 @@ const categoryRoutes = require('./routes/category.routes');
 const variantRoutes = require('./routes/variant.routes');
 const attributeRoutes = require('./routes/attribute.routes');
 
+const cartRoutes = require('./routes/cart.routes');
 
 // Create an Express app
 const app = express();
@@ -38,6 +39,7 @@ app.use('/category', categoryRoutes);
 app.use('/variant', variantRoutes);
 app.use('/attribute', attributeRoutes);
 
+app.use('/', cartRoutes); // can't be changed accordingly  (the first argument '/' to '/something')
 
 // Start the server
 const PORT = process.env.PORT || 3000;
