@@ -219,11 +219,11 @@ CREATE TABLE `Order` (
   `delivery_location_id` INT,
   `payment_method` ENUM('cash_on_delivery', 'card'),
   `total_amount` FLOAT,
-  `order_status` ENUM('Processing', 'Shipped', 'Completed', 'Failed'),
+  `order_status` ENUM('Pending','Processing','Failed' 'Shipped', 'Completed', 'Failed'),
   `purchased_time` DATETIME,
   `delivery_estimate` INT,
-  `created_at` DATETIME,
-  `updated_at` DATETIME,
+  `created_at` DATETIME DEFAULT current_timestamp,
+  `updated_at` DATETIME ,
   PRIMARY KEY (`order_id`),
   FOREIGN KEY (`customer_id`) REFERENCES `User`(`user_id`),
  
@@ -250,8 +250,12 @@ CREATE TABLE `OrderItem` (
   `quantity` INT,
   `price` FLOAT,
   PRIMARY KEY (`order_item_id`),
-  FOREIGN KEY (`order_id`) REFERENCES `Order`(`order_id`),
+  FOREIGN KEY (`order_id`) REFERENCES `Order`(`order_id`)
+  on delete cascade
+  on update cascade,
   FOREIGN KEY (`variant_id`) REFERENCES `Variant`(`variant_id`)
+    on delete restrict
+    on update RESTRICT
 );
 
 DELIMITER $$
@@ -569,49 +573,52 @@ BEGIN
     WHERE variant_id = variantID;
 END$$
 
-CREATE PROCEDURE CheckoutOrder(IN orderID INT)
-BEGIN
-    DECLARE variantID INT;
-    DECLARE orderQuantity INT;
-    DECLARE availableQuantity INT;
-    DECLARE done INT DEFAULT FALSE;
+-- no need of this function 
+-- new implementation is done in the checkout procedure
+-------------------------------------------------------------------------------------
+-- CREATE PROCEDURE CheckoutOrder(IN orderID INT)
+-- BEGIN
+--     DECLARE variantID INT;
+--     DECLARE orderQuantity INT;
+--     DECLARE availableQuantity INT;
+--     DECLARE done INT DEFAULT FALSE;
     
-    -- Cursor to loop through all items in the order
-    DECLARE orderItems CURSOR FOR
-    SELECT variant_id, quantity
-    FROM OrderItem
-    WHERE order_id = orderID;
+--     -- Cursor to loop through all items in the order
+--     DECLARE orderItems CURSOR FOR
+--     SELECT variant_id, quantity
+--     FROM OrderItem
+--     WHERE order_id = orderID;
 
-    -- Handler to exit the loop
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+--     -- Handler to exit the loop
+--     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
-    OPEN orderItems;
+--     OPEN orderItems;
 
-    orderLoop: LOOP
-        FETCH orderItems INTO variantID, orderQuantity;
+--     orderLoop: LOOP
+--         FETCH orderItems INTO variantID, orderQuantity;
         
-        IF done THEN
-            LEAVE orderLoop;
-        END IF;
+--         IF done THEN
+--             LEAVE orderLoop;
+--         END IF;
         
-        -- Check the available stock
-        SELECT quantity_available INTO availableQuantity
-        FROM Inventory
-        WHERE variant_id = variantID;
+--         -- Check the available stock
+--         SELECT quantity_available INTO availableQuantity
+--         FROM Inventory
+--         WHERE variant_id = variantID;
 
-        IF availableQuantity < orderQuantity THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for one or more items';
-        ELSE
-            -- Reduce the stock
-            UPDATE Inventory
-            SET quantity_available = quantity_available - orderQuantity
-            WHERE variant_id = variantID;
-        END IF;
-    END LOOP;
+--         IF availableQuantity < orderQuantity THEN
+--             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for one or more items';
+--         ELSE
+--             -- Reduce the stock
+--             UPDATE Inventory
+--             SET quantity_available = quantity_available - orderQuantity
+--             WHERE variant_id = variantID;
+--         END IF;
+--     END LOOP;
 
-    CLOSE orderItems;
-END$$
-
+--     CLOSE orderItems;
+-- END$$
+---------------------------------------------------------------------------
 CREATE PROCEDURE Get_Quarterly_Sales_By_Year (IN input_year INT)
 BEGIN
     -- Create a temporary table for quarters
@@ -813,3 +820,152 @@ UPDATE `Variant`
 SET interested = interested + 5
 WHERE `variant_id` = 1;  -- 5 people are interested in Samsung Galaxy S21
 
+
+
+USE `ecommercedatabase`;
+DROP procedure IF EXISTS `ShowCartofUser`;
+
+DELIMITER $$
+USE `ecommercedatabase`$$
+CREATE PROCEDURE `ShowCartofUser` (
+	IN p_user_id INT
+)
+BEGIN
+	select *
+    from variant 
+    where variant_id in (
+    select variant_id from cart where user_id = p_user_id
+    );
+END$$
+
+DELIMITER ;
+
+DELIMITER //
+
+-- Trigger for INSERT and UPDATE on OrderItem
+CREATE TRIGGER update_total_amount_after_insert_update
+AFTER INSERT ON OrderItem
+FOR EACH ROW
+BEGIN
+  DECLARE total FLOAT;
+  SELECT SUM((price - discount) * quantity) INTO total
+  FROM OrderItem
+  WHERE order_id = NEW.order_id;
+  
+  UPDATE `Order`
+  SET total_amount = total
+  WHERE order_id = NEW.order_id;
+END //
+
+CREATE TRIGGER update_total_amount_after_update
+AFTER UPDATE ON OrderItem
+FOR EACH ROW
+BEGIN
+  DECLARE total FLOAT;
+  SELECT SUM((price - discount) * quantity) INTO total
+  FROM OrderItem
+  WHERE order_id = NEW.order_id;
+  
+  UPDATE `Order`
+  SET total_amount = total
+  WHERE order_id = NEW.order_id;
+END //
+
+-- Trigger for DELETE on OrderItem
+CREATE TRIGGER update_total_amount_after_delete
+AFTER DELETE ON OrderItem
+FOR EACH ROW
+BEGIN
+  DECLARE total FLOAT;
+  SELECT SUM((price - discount) * quantity) INTO total
+  FROM OrderItem
+  WHERE order_id = OLD.order_id;
+  
+  UPDATE `Order`
+  SET total_amount = total
+  WHERE order_id = OLD.order_id;
+END //
+
+DELIMITER ;
+
+
+USE `ecommercedatabase`;
+DROP procedure IF EXISTS `Checkout`;
+
+DELIMITER $$
+USE `ecommercedatabase`$$
+CREATE PROCEDURE `Checkout` (IN userID int, IN order_items JSON)
+BEGIN
+	DECLARE orderID INT;
+    DECLARE i INT DEFAULT 0;
+    DECLARE array_length INT;
+    DECLARE variantID INT;
+    DECLARE availableQuantity INT;
+	set autocommit = 0;
+    start transaction;
+    
+    INSERT INTO `order` (customer_id, created_at,order_status) VALUES (userID , NOW(), 'Pending');
+    
+	
+    SET orderID = LAST_INSERT_ID();
+    
+    SET array_length = JSON_LENGTH(order_items);
+    WHILE i < array_length DO
+    
+		SET variantID = JSON_UNQUOTE(JSON_EXTRACT(order_items, CONCAT('$[', counter, '].variant_id')));
+        select quantity_available into availableQuantity from Inventory where variant_id = variantID;
+        -- set desiredQuantity = 0;
+        -- select quantity into desiredQuantity from cart where user_id = userID and variant_id = variantID;
+        
+        if (
+        SELECT EXISTS(
+        SELECT 1 FROM cart
+        WHERE user_id = userID and 
+        variant_id = variantID and 
+        quantity <= avaliableQuantity) ) then
+			DELETE FROM cart 
+            WHERE user_id = userID AND variant_id = variantID;
+            INSERT INTO orderitem (order_id, variant_id, quantity) 
+            VALUES (orderID, variantID, old.quantity);
+            update Inventory 
+            set quantity_available = quantity_available - old.quantity
+            where variant_id = variantID;
+        else
+			select variantID,desiredQuantity as desiredQuantity , 'item not in the cart | not enough stock | wrong variant_id' ;
+			ROLLBACK;
+		end if;
+        SET i = i + 1;
+    END WHILE;
+    
+    commit;
+    set autocommit = 1;
+END $$
+
+DELIMITER ;
+
+
+
+delimiter $$
+drop event if exists `30minutes_delete_pending_orders`;
+create event `30minutes_delete_pending_orders` 
+on schedule
+	every 30 minute
+do BEGIN
+    start transaction;
+    -- Update inventory for the deleted orders
+    UPDATE Inventory i
+    JOIN OrderItem oi ON i.variant_id = oi.variant_id
+    JOIN `Order` o ON oi.order_id = o.order_id
+    SET i.quantity_available = i.quantity_available + oi.quantity
+    WHERE o.order_status = 'Pending' AND o.updated_at + INTERVAL 30 MINUTE <= CURRENT_TIMESTAMP();
+    -- Delete orders that are pending and older than 30 minutes
+    DELETE FROM `Order`
+    WHERE order_status = 'Pending' AND updated_at + INTERVAL 30 MINUTE <= CURRENT_TIMESTAMP();
+    commit;
+END$$
+-- need an index cuz this a background process 
+delimiter ;
+
+CREATE INDEX idx_order_status_updated_at ON `Order` (order_status, updated_at);
+CREATE INDEX idx_order_item_order_id ON OrderItem (order_id);
+CREATE INDEX idx_inventory_variant_id ON Inventory (variant_id);
