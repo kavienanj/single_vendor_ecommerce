@@ -6,6 +6,9 @@ const dotenv = require('dotenv');
 // Load environment variables
 dotenv.config();
 
+// Import the middleware
+const authMiddleware = require('./middleware/authMiddleware'); // Import the middleware
+
 // Import routes
 const authRoutes = require('./routes/auth.routes');
 const productRoutes = require('./routes/products.routes');
@@ -29,6 +32,9 @@ app.use(express.json());
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
 
+// Apply the auth middleware to routes that need token verification
+app.use(authMiddleware);
+
 // Use the product routes
 app.use('/', productRoutes);
 app.use('/', authRoutes);
@@ -38,7 +44,6 @@ app.use('/', deliveryLocationRoutes);
 app.use('/category', categoryRoutes);
 app.use('/variant', variantRoutes);
 app.use('/attribute', attributeRoutes);
-
 app.use('/', cartRoutes); // can't be changed accordingly  (the first argument '/' to '/something')
 
 // Start the server

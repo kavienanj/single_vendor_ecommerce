@@ -22,7 +22,23 @@ exports.createCategory = ({ categoryName, description }) => {
 
 // Function to get all categories
 exports.getAllCategories = () => {
-    const query = `SELECT * FROM Category`;
+    const query = `
+        SELECT 
+        parent.category_id AS category_id,
+        parent.category_name AS category_name,
+        parent.description AS category_description,
+        JSON_ARRAYAGG(JSON_OBJECT(
+            'category_id', child.category_id,
+            'category_name', child.category_name,
+            'category_description', child.description
+        )) AS sub_categories
+        FROM Category parent
+        LEFT JOIN ParentCategory_Match pcm ON parent.category_id = pcm.parent_category_id
+        LEFT JOIN Category child ON pcm.category_id = child.category_id
+        WHERE pcm.category_id IS NOT NULL  -- Ensure there are child categories
+        GROUP BY parent.category_id, parent.category_name, parent.description
+        ORDER BY parent.category_name;
+    `;
     return runQuery(query);
 };
 

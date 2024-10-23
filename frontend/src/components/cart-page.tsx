@@ -1,36 +1,13 @@
 "use client"
 
-import { useState } from "react"
 import { Minus, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
-
-interface CartItem {
-  id: number
-  title: string
-  price: number
-  image: string
-  quantity: number
-  selectedColor?: string
-  selectedStorage?: string
-}
+import { useEcommerce } from "@/contexts/EcommerceContext"
 
 export function CartPageComponent() {
-  const [cart, setCart] = useState<CartItem[]>([
-    { id: 1, title: "Smartphone X", price: 699, image: "/placeholder.svg", quantity: 2, selectedColor: "Black", selectedStorage: "128GB" },
-    { id: 2, title: "Wireless Earbuds", price: 129, image: "/placeholder.svg", quantity: 1, selectedColor: "White" },
-  ])
-
-  const updateQuantity = (id: number, newQuantity: number) => {
-    setCart(cart.map(item => 
-      item.id === id ? { ...item, quantity: Math.max(1, newQuantity) } : item
-    ))
-  }
-
-  const removeFromCart = (id: number) => {
-    setCart(cart.filter(item => item.id !== id))
-  }
+  const { addToCart, removeFromCart, cart } = useEcommerce();
 
   const calculateTotal = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0)
@@ -45,15 +22,15 @@ export function CartPageComponent() {
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2 space-y-4">
             {cart.map((item) => (
-              <Card key={item.id}>
+              <Card key={item.variant_id}>
                 <CardContent className="flex items-center p-4">
-                  <img src={item.image} alt={item.title} className="w-20 h-20 object-cover rounded-md mr-4" />
+                  <img src={item.image_url} alt={item.variant_name} className="w-20 h-20 object-cover rounded-md mr-4" />
                   <div className="flex-grow">
-                    <h2 className="font-semibold">{item.title}</h2>
+                    <h2 className="font-semibold">{item.variant_name}</h2>
                     <p className="text-sm text-gray-600">
-                      {item.selectedColor && `Color: ${item.selectedColor}`}
-                      {item.selectedColor && item.selectedStorage && " | "}
-                      {item.selectedStorage && `Storage: ${item.selectedStorage}`}
+                      {item.attributes.map(
+                        (attr) => `${attr.attribute_name}: ${attr.attribute_value}`).join(", ")
+                      }
                     </p>
                     <p className="font-bold mt-1">${item.price.toFixed(2)}</p>
                   </div>
@@ -61,7 +38,7 @@ export function CartPageComponent() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => addToCart(item, item.quantity - 1)}
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
@@ -69,7 +46,7 @@ export function CartPageComponent() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      onClick={() => addToCart(item, item.quantity + 1)}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -78,7 +55,7 @@ export function CartPageComponent() {
                     variant="destructive"
                     size="icon"
                     className="ml-4"
-                    onClick={() => removeFromCart(item.id)}
+                    onClick={() => removeFromCart(item.variant_id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -92,8 +69,8 @@ export function CartPageComponent() {
                 <h2 className="font-semibold text-lg mb-4">Order Summary</h2>
                 <div className="space-y-2">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <span>{item.title} (x{item.quantity})</span>
+                    <div key={item.variant_id} className="flex justify-between text-sm">
+                      <span>{item.variant_name} (x{item.quantity})</span>
                       <span>${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}

@@ -1,7 +1,10 @@
 const model = require('../models/cart.model');
 
 exports.addtoCart = async (req, res) => {
-    const userId = parseInt(req.params.userId);
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const userId = parseInt(req.user.id);
     const { variant_id, quantity } = req.body;
     try {
         await model.addtoCart({ userId, variant_id, quantity });
@@ -16,7 +19,10 @@ exports.addtoCart = async (req, res) => {
 
 
 exports.showCart = async (req, res) => {
-    const userId = parseInt(req.params.userId);
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const userId = parseInt(req.user.id);
     try {
         const response = await model.showCart({ userId });
         res.status(200).json(response);
@@ -27,7 +33,10 @@ exports.showCart = async (req, res) => {
 };
 
 exports.deletefromCart = async (req, res) => {
-    const userId = parseInt(req.params.userId);
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const userId = parseInt(req.user.id);
     const { variant_id} = req.body;
     try {
         await model.deletefromCart({ userId, variant_id });
@@ -41,9 +50,11 @@ exports.deletefromCart = async (req, res) => {
 };
 
 exports.setQuantity = async (req, res) => {
-    const userId = parseInt(req.params.userId);
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const userId = parseInt(req.user.id);
     const { variant_id,quantity} = req.body;
-
     try {
         await model.setQuantity({ userId,variant_id,quantity });
         res.status(200).json({
@@ -59,7 +70,7 @@ exports.setQuantity = async (req, res) => {
 };
 
 exports.checkout = async (req, res) => {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(req.user.id);
     const order_items = req.body;
     try {
         await model.checkout({ userId , order_items });
@@ -73,7 +84,7 @@ exports.checkout = async (req, res) => {
 };
 
 exports.placeOrder = async (req, res) => {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(req.user.id);
     const { 
         order_id, 
         contact_email, 
@@ -102,7 +113,7 @@ exports.placeOrder = async (req, res) => {
 }
 
 exports.getPaymentInfo = async (req, res) => {
-    const userId = parseInt(req.params.userId);
+    const userId = parseInt(req.user.id);
     try {
         const response = await model.getPaymentInfo({ userId });
         res.status(200).json(response);

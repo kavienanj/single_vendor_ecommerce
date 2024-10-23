@@ -52,7 +52,8 @@ CREATE TABLE `Product` (
   `description` VARCHAR(255),
   `sku` VARCHAR(255),
   `weight` FLOAT,
-  -- `default_price` FLOAT,
+  `default_price` FLOAT,
+  `default_image` VARCHAR(255),
   -- `warehouse_id` INT,
   `created_at` DATETIME NOT NULL,
   `updated_at` DATETIME,
@@ -156,10 +157,10 @@ CREATE TABLE `Role` (
 CREATE TABLE `User` (
   `user_id` INT AUTO_INCREMENT,
   `first_name` VARCHAR(255) not null,
-  `last_name` VARCHAR(255) not null,
-  `email` VARCHAR(255) not null unique,
-  `password_hash` VARCHAR(255) not null,
-  `phone_number` VARCHAR(255) not null unique,
+  `last_name` VARCHAR(255),
+  `email` VARCHAR(255) unique,
+  `password_hash` VARCHAR(255),
+  `phone_number` VARCHAR(255),
   `delivery_location_id` INT,
   `is_guest` BOOLEAN not null,
   `role_id` INT not null,
@@ -176,9 +177,9 @@ CREATE TABLE `User` (
 
 CREATE TABLE `Cart` (
   -- `cart_item_id` INT AUTO_INCREMENT,
-  `user_id` INT,
-  `variant_id` INT,
-  `quantity` INT,
+  `user_id` INT not null,
+  `variant_id` INT not null,
+  `quantity` INT not null,
   -- PRIMARY KEY (`cart_item_id`),
   PRIMARY KEY (`user_id`,`variant_id`),
   FOREIGN KEY (`user_id`) REFERENCES `User`(`user_id`)
@@ -468,7 +469,7 @@ BEGIN
     
     IF existing_quantity IS NOT NULL THEN
         UPDATE Cart
-        SET quantity = quantity + p_quantity
+        SET quantity = p_quantity
         WHERE user_id = p_user_id AND variant_id = p_variant_id;
     ELSE
         INSERT INTO Cart (user_id, variant_id, quantity)
@@ -476,6 +477,34 @@ BEGIN
     END IF;
 END;
 
+-- Show cart of user
+
+DROP PROCEDURE IF EXISTS `ShowCartofUser`;
+CREATE PROCEDURE `ShowCartofUser` (
+    IN p_user_id INT
+)
+BEGIN
+    SELECT 
+        v.variant_id,
+        v.name as variant_name,
+        v.price,
+        v.image_url,
+        c.quantity,
+        (
+            SELECT JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'attribute_name', a.attribute_name,
+                    'attribute_value', va.attribute_value
+                )
+            )
+            FROM custom_attribute_value va
+            JOIN custom_attribute a ON va.attribute_id = a.attribute_id
+            WHERE va.variant_id = v.variant_id
+        ) AS attributes
+    FROM variant v
+    JOIN cart c ON v.variant_id = c.variant_id
+    WHERE c.user_id = p_user_id;
+END$$
 
 -- remove from cart.
 
@@ -638,58 +667,6 @@ VALUES
     ('Admin', 'Has full access to the system'),
     ('User', 'Registered customer with limited access'),
     ('Guest', 'Unregistered customer with minimal access');
-    
--- INSERT INTO `User` (`first_name`, `last_name`, `email`, `password_hash`, `phone_number`, `is_guest`, `role_id`, `created_at`, `last_login`)
---    ('John', 'Doe', 'john.doe@example.com', 'hashed_password_1', '1234567890', FALSE, 2, NOW(), NOW()),
---    ('Jane', 'Smith', 'jane.smith@example.com', 'hashed_password_2', '0987654321', FALSE, 2, NOW(), NULL),
---    ('Guest', 'User', 'guest.user@example.com', 'hashed_password_3', '1122334455', TRUE, 3, NOW(), NULL);
--- INSERT INTO `Order` (`customer_id`, `contact_email`, `contact_phone`, `delivery_method`, `payment_method`, `total_amount`, `order_status`, `purchased_time`)
--- VALUES 
---     (1, 'john.doe@example.com', '1234567890', 'delivery', 'card', 199.99, 'Completed', '2024-03-02'),
---     (2, 'jane.smith@example.com', '0987654321', 'store_pickup', 'Cash_on_delivery', 59.99, 'Shipped', '2024-09-04'),
---     (3, 'guest.user@example.com', '1122334455', 'delivery', 'Cash_on_delivery', 120.00, 'Processing', '2024-09-05');
--- use DataBaseProject;
--- CALL Get_Quarterly_Sales_By_Year(2024);
-
-
--- Insert categories
-INSERT INTO `Category` (`category_name`, `description`) 
-VALUES 
-('Electronics', 'Consumer Electronics'),
-('Toys', 'Children toys and games'),
-('Mobile Phones', 'Smartphones and mobile devices'),
-('Laptops', 'Portable computers'),
-('Video Games', 'Gaming consoles and accessories'),
-('Smart Home', 'Smart home appliances'),
-('Audio Equipment', 'Speakers, headphones, and audio devices');
-
--- Insert products
-INSERT INTO `Product` (`title`, `description`, `sku`, `weight`, `created_at`, `updated_at`) 
-VALUES 
-('Samsung Galaxy S21', 'Latest Samsung flagship smartphone', 'SGS21', 0.5, NOW(), NOW()),
-('Apple iPhone 13', 'New Apple iPhone with improved features', 'AIP13', 0.6, NOW(), NOW()),
-('Dell XPS 13', 'High-end ultraportable laptop', 'DXPS13', 1.2, NOW(), NOW()),
-('Sony PlayStation 5', 'Next-generation gaming console', 'PS5', 4.5, NOW(), NOW()),
-('Bose QuietComfort 45', 'Noise-cancelling over-ear headphones', 'BQC45', 0.3, NOW(), NOW()),
-('Nintendo Switch', 'Hybrid gaming console', 'NSWITCH', 1.0, NOW(), NOW()),
-('Amazon Echo Dot', 'Smart speaker with Alexa', 'AED4', 0.3, NOW(), NOW()),
-('Logitech G502', 'Gaming mouse with customizable buttons', 'LG502', 0.2, NOW(), NOW()),
-('Lego Star Wars', 'Building toy for kids', 'LSWARS', 2.5, NOW(), NOW()),
-('Hot Wheels Track', 'Car track set for kids', 'HWT', 1.5, NOW(), NOW());
-
--- Insert product categories
-INSERT INTO `Product_Category_Match` (`product_id`, `category_id`) 
-VALUES 
-(1, 3),  -- Samsung Galaxy S21 in Mobile Phones
-(2, 3),  -- Apple iPhone 13 in Mobile Phones
-(3, 4),  -- Dell XPS 13 in Laptops
-(4, 5),  -- PlayStation 5 in Video Games
-(5, 7),  -- Bose QC 45 in Audio Equipment
-(6, 5),  -- Nintendo Switch in Video Games
-(7, 6),  -- Amazon Echo Dot in Smart Home
-(8, 5),  -- Logitech G502 in Video Games
-(9, 2),  -- Lego Star Wars in Toys
-(10, 2); -- Hot Wheels Track in Toys
 
 -- Insert warehouse data
 INSERT INTO `Warehouse` (`location`, `capacity`, `available_capacity`) 
@@ -697,42 +674,234 @@ VALUES
 ('New York', 1000, 1000),
 ('Los Angeles', 800, 800);
 
--- Insert product variants
-INSERT INTO `Variant` (`product_id`, `name`, `image_url`, `price`, `created_at`, `updated_at`) 
+-- Insert main categories
+INSERT INTO `Category` (`category_name`, `description`) 
 VALUES 
-(1, 'Samsung Galaxy S21 - 128GB', 'url_sgs21_128gb.jpg', 799.99, NOW(), NOW()),
-(2, 'Apple iPhone 13 - 256GB', 'url_iphone13_256gb.jpg', 999.99, NOW(), NOW()),
-(3, 'Dell XPS 13 - 16GB RAM', 'url_dellxps13_16gb.jpg', 1199.99, NOW(), NOW()),
-(4, 'PlayStation 5 - Standard Edition', 'url_ps5_standard.jpg', 499.99, NOW(), NOW()),
-(5, 'Bose QC 45 - Black', 'url_boseqc45_black.jpg', 329.99, NOW(), NOW()),
-(6, 'Nintendo Switch - Neon Red/Blue', 'url_switch_neon.jpg', 299.99, NOW(), NOW()),
-(7, 'Amazon Echo Dot 4th Gen', 'url_echo_dot4.jpg', 49.99, NOW(), NOW()),
-(8, 'Logitech G502 Hero', 'url_g502.jpg', 49.99, NOW(), NOW()),
-(9, 'Lego Star Wars Set', 'url_lego_star_wars.jpg', 149.99, NOW(), NOW()),
-(10, 'Hot Wheels Track Builder', 'url_hotwheels.jpg', 29.99, NOW(), NOW());
+('Computers', 'Desktops, Laptops, and Computer Accessories'),
+('Mobile Phones', 'Smartphones and Mobile Accessories'),
+('Speakers', 'Audio speakers and sound systems');
 
--- Insert inventory
-INSERT INTO `Inventory` (`warehouse_id`, `variant_id`, `quantity_available`, `last_updated`) 
+-- Insert sub-categories (Brands under each main category)
+INSERT INTO `Category` (`category_name`, `description`) 
 VALUES 
-(1, 1, 100, NOW()),
-(1, 2, 50, NOW()),
-(1, 3, 30, NOW()),
-(2, 4, 200, NOW()),
-(2, 5, 75, NOW()),
-(1, 6, 100, NOW()),
-(2, 7, 300, NOW()),
-(1, 8, 150, NOW()),
-(2, 9, 200, NOW()),
-(1, 10, 500, NOW());
+('Apple', 'Apple products'),   -- Sub-category under Computers & Mobile Phones
+('Samsung', 'Samsung products'), -- Sub-category under Computers & Mobile Phones
+('Lenovo', 'Lenovo products'),   -- Sub-category under Computers
+('HP', 'HP products'),           -- Sub-category under Computers
+('OnePlus', 'OnePlus smartphones'), -- Sub-category under Mobile Phones
+('JBL', 'JBL Speakers'),         -- Sub-category under Speakers
+('Sony', 'Sony Speakers'),       -- Sub-category under Speakers
+('Bose', 'Bose Speakers');       -- Sub-category under Speakers
 
-
--- Insert Parent-Category relationships
+-- Parent Category relationships
 INSERT INTO `ParentCategory_Match` (`category_id`, `parent_category_id`) 
 VALUES
-(3, 1),  -- Mobile Phones under Electronics
-(4, 1),  -- Laptops under Electronics
-(5, 1),  -- Video Games under Electronics
-(7, 1);  -- Audio Equipment under Electronics
+(4, 1),  -- Apple under Computers
+(4, 2),  -- Apple under Computers
+(5, 2),  -- Samsung under Mobile Phones
+(6, 1),  -- Lenovo under Computers
+(7, 1),  -- HP under Computers
+(8, 2),  -- OnePlus under Mobile Phones
+(9, 3),  -- JBL under Speakers
+(10, 3), -- Sony under Speakers
+(11, 3); -- Bose under Speakers
+
+-- Insert products
+INSERT INTO `Product` (`title`, `description`, `sku`, `weight`, `created_at`, `updated_at`, `default_price`, `default_image`)
+VALUES 
+('Apple MacBook Air M2', '13-inch laptop with Apple M2 chip', 'MBA_M2', 1.24, NOW(), NOW(), 999.99, 'url_macbook_air_m2.jpg'),
+('Lenovo ThinkPad X1 Carbon', '14-inch ultrabook with Intel Core i7', 'LTP_X1C', 1.09, NOW(), NOW(), 1299.99, 'url_lenovo_x1_carbon.jpg'),
+('HP Pavilion Desktop', 'High-performance desktop computer', 'HP_PVD', 8.5, NOW(), NOW(), 849.99, 'url_hp_pavilion_desktop.jpg'),
+('Apple iPhone 14 Pro', 'Latest iPhone with Pro features', 'IP14_PRO', 0.7, NOW(), NOW(), 1099.99, 'url_iphone14_pro.jpg'),
+('OnePlus 11', 'Flagship OnePlus smartphone', 'ONEP11', 0.6, NOW(), NOW(), 799.99, 'url_oneplus_11.jpg'),
+('Samsung Galaxy A52', 'Mid-range Samsung smartphone', 'SG_A52', 0.5, NOW(), NOW(), 399.99, 'url_galaxy_a52.jpg'),
+('JBL Flip 6', 'Portable waterproof Bluetooth speaker', 'JBL_FLIP6', 0.55, NOW(), NOW(), 99.99, 'url_jbl_flip6.jpg'),
+('Sony SRS-XB43', 'Extra Bass wireless speaker', 'SRS_XB43', 2.95, NOW(), NOW(), 249.99, 'url_sony_xb43.jpg'),
+('Bose SoundLink Revolve', '360-degree Bluetooth speaker', 'BOSE_REVOLVE', 0.66, NOW(), NOW(), 199.99, 'url_bose_revolve.jpg');
+
+-- Insert product categories (Match products with specific brands)
+INSERT INTO `Product_Category_Match` (`product_id`, `category_id`) 
+VALUES 
+(1, 4),  -- MacBook Air under Apple
+(1, 1),  -- MacBook Air under Apple
+(2, 6),  -- ThinkPad X1 under Lenovo
+(2, 1),  -- ThinkPad X1 under Lenovo
+(3, 7),  -- HP Pavilion under HP
+(3, 1),  -- HP Pavilion under HP
+(4, 4),  -- iPhone 14 Pro under Apple
+(4, 2),  -- iPhone 14 Pro under Apple
+(5, 8),  -- OnePlus 11 under OnePlus
+(5, 2),  -- OnePlus 11 under OnePlus
+(6, 5),  -- Galaxy A52 under Samsung
+(6, 2),  -- Galaxy A52 under Samsung
+(7, 9),  -- JBL Flip 6 under JBL
+(7, 3),  -- JBL Flip 6 under JBL
+(8, 10), -- Sony SRS-XB43 under Sony
+(8, 3), -- Sony SRS-XB43 under Sony
+(9, 11), -- Bose SoundLink Revolve under Bose
+(9, 3); -- Bose SoundLink Revolve under Bose
+
+-- Insert product variants with multiple options
+INSERT INTO `Variant` (`product_id`, `name`, `image_url`, `price`, `created_at`, `updated_at`) 
+VALUES 
+-- Apple MacBook Air M2
+(1, 'MacBook Air M2 - 256GB SSD', 'url_macbook_air_256gb.jpg', 1099.99, NOW(), NOW()),
+(1, 'MacBook Air M2 - 512GB SSD', 'url_macbook_air_512gb.jpg', 1399.99, NOW(), NOW()),
+
+-- Lenovo ThinkPad X1 Carbon
+(2, 'ThinkPad X1 Carbon - 16GB RAM', 'url_thinkpad_x1_16gb.jpg', 1399.99, NOW(), NOW()),
+(2, 'ThinkPad X1 Carbon - 32GB RAM', 'url_thinkpad_x1_32gb.jpg', 1699.99, NOW(), NOW()),
+
+-- HP Pavilion Desktop
+(3, 'HP Pavilion Desktop - 512GB SSD', 'url_hp_pavilion_512gb.jpg', 799.99, NOW(), NOW()),
+(3, 'HP Pavilion Desktop - 1TB HDD', 'url_hp_pavilion_1tb.jpg', 899.99, NOW(), NOW()),
+
+-- Apple iPhone 14 Pro
+(4, 'iPhone 14 Pro - 512GB', 'url_iphone_14_pro_512gb.jpg', 1299.99, NOW(), NOW()),
+(4, 'iPhone 14 Pro - 1TB', 'url_iphone_14_pro_1tb.jpg', 1499.99, NOW(), NOW()),
+
+-- OnePlus 11
+(5, 'OnePlus 11 - 256GB', 'url_oneplus_11_256gb.jpg', 699.99, NOW(), NOW()),
+(5, 'OnePlus 11 - 512GB', 'url_oneplus_11_512gb.jpg', 799.99, NOW(), NOW()),
+
+-- Samsung Galaxy A52
+(6, 'Samsung Galaxy A52 - 128GB', 'url_galaxy_a52_128gb.jpg', 349.99, NOW(), NOW()),
+(6, 'Samsung Galaxy A52 - 256GB', 'url_galaxy_a52_256gb.jpg', 399.99, NOW(), NOW()),
+
+-- JBL Flip 6
+(7, 'JBL Flip 6 - Black', 'url_jbl_flip6_black.jpg', 129.99, NOW(), NOW()),
+(7, 'JBL Flip 6 - Blue', 'url_jbl_flip6_blue.jpg', 129.99, NOW(), NOW()),
+
+-- Sony SRS-XB43
+(8, 'Sony SRS-XB43 - Black', 'url_sony_srsxb43_black.jpg', 249.99, NOW(), NOW()),
+(8, 'Sony SRS-XB43 - Blue', 'url_sony_srsxb43_blue.jpg', 249.99, NOW(), NOW()),
+
+-- Bose SoundLink Revolve
+(9, 'Bose SoundLink Revolve - Silver', 'url_bose_revolve_silver.jpg', 199.99, NOW(), NOW()),
+(9, 'Bose SoundLink Revolve - Black', 'url_bose_revolve_black.jpg', 199.99, NOW(), NOW());
+
+-- Insert inventory with updated variants
+INSERT INTO `Inventory` (`warehouse_id`, `variant_id`, `quantity_available`, `last_updated`) 
+VALUES 
+-- MacBook Air M2
+(1, 1, 100, NOW()),
+(1, 2, 75, NOW()),
+
+-- ThinkPad X1 Carbon
+(1, 3, 50, NOW()),
+(1, 4, 30, NOW()),
+
+-- HP Pavilion Desktop
+(2, 5, 20, NOW()),
+(2, 6, 15, NOW()),
+
+-- iPhone 14 Pro
+(1, 7, 150, NOW()),
+(1, 8, 100, NOW()),
+
+-- OnePlus 11
+(2, 9, 75, NOW()),
+(2, 10, 50, NOW()),
+
+-- Samsung Galaxy A52
+(1, 11, 200, NOW()),
+(1, 12, 100, NOW()),
+
+-- JBL Flip 6
+(2, 13, 300, NOW()),
+(2, 14, 200, NOW()),
+
+-- Sony SRS-XB43
+(1, 15, 100, NOW()),
+(1, 16, 75, NOW()),
+
+-- Bose SoundLink Revolve
+(2, 17, 50, NOW()),
+(2, 18, 40, NOW());
+
+-- Insert product attributes (Attributes that apply to products)
+INSERT INTO `Custom_Attribute` (`product_id`, `attribute_name`) 
+VALUES 
+-- MacBook Air M2
+(1, 'Storage'),
+(1, 'Color'),
+
+-- ThinkPad X1 Carbon
+(2, 'RAM'),
+(2, 'Storage'),
+
+-- HP Pavilion Desktop
+(3, 'Storage'),
+
+-- iPhone 14 Pro
+(4, 'Storage'),
+(4, 'Color'),
+
+-- OnePlus 11
+(5, 'Storage'),
+(5, 'Color'),
+
+-- Samsung Galaxy A52
+(6, 'Storage'),
+(6, 'Color'),
+
+-- JBL Flip 6
+(7, 'Color'),
+
+-- Sony SRS-XB43
+(8, 'Color'),
+
+-- Bose SoundLink Revolve
+(9, 'Color');
+
+-- Insert custom attribute values (Assigning specific values to each variant)
+INSERT INTO `Custom_Attribute_Value` (`variant_id`, `attribute_id`, `attribute_value`) 
+VALUES 
+-- MacBook Air M2 Variants
+(1, 1, '256GB'),  -- MacBook Air M2 - 256GB SSD
+(1, 2, 'Silver'), -- MacBook Air M2 - Color Silver
+(2, 1, '512GB'),  -- MacBook Air M2 - 512GB SSD
+(2, 2, 'Silver'), -- MacBook Air M2 - Color Silver
+
+-- ThinkPad X1 Carbon Variants
+(3, 3, '16GB'),   -- ThinkPad X1 Carbon - 16GB RAM
+(3, 4, '512GB'),  -- ThinkPad X1 Carbon - 512GB Storage
+(4, 3, '32GB'),   -- ThinkPad X1 Carbon - 32GB RAM
+(4, 4, '1TB'),    -- ThinkPad X1 Carbon - 1TB Storage
+
+-- HP Pavilion Desktop Variants
+(5, 5, '512GB SSD'),  -- HP Pavilion - 512GB SSD
+(6, 5, '1TB HDD'),    -- HP Pavilion - 1TB HDD
+
+-- iPhone 14 Pro Variants
+(7, 6, '512GB'),  -- iPhone 14 Pro - 512GB Storage
+(7, 7, 'Gold'),   -- iPhone 14 Pro - Gold Color
+(8, 6, '1TB'),    -- iPhone 14 Pro - 1TB Storage
+(8, 7, 'Silver'), -- iPhone 14 Pro - Silver Color
+
+-- OnePlus 11 Variants
+(9, 8, '256GB'),  -- OnePlus 11 - 256GB Storage
+(9, 9, 'Green'),  -- OnePlus 11 - Green Color
+(10, 8, '512GB'), -- OnePlus 11 - 512GB Storage
+(10, 9, 'Black'), -- OnePlus 11 - Black Color
+
+-- Samsung Galaxy A52 Variants
+(11, 10, '128GB'),  -- Samsung Galaxy A52 - 128GB Storage
+(11, 11, 'White'),  -- Samsung Galaxy A52 - White Color
+(12, 10, '256GB'),  -- Samsung Galaxy A52 - 256GB Storage
+(12, 11, 'Black'),  -- Samsung Galaxy A52 - Black Color
+
+-- JBL Flip 6 Variants
+(13, 12, 'Black'),  -- JBL Flip 6 - Black Color
+(14, 12, 'Blue'),   -- JBL Flip 6 - Blue Color
+
+-- Sony SRS-XB43 Variants
+(15, 13, 'Black'),  -- Sony SRS-XB43 - Black Color
+(16, 13, 'Blue'),   -- Sony SRS-XB43 - Blue Color
+
+-- Bose SoundLink Revolve Variants
+(17, 14, 'Silver'),  -- Bose SoundLink Revolve - Silver Color
+(18, 14, 'Black');   -- Bose SoundLink Revolve - Black Color
 
 
 INSERT INTO `DeliveryLocation` (`location_name`, `location_type`, `with_stock_delivery_days`, `without_stock_delivery_days`)
@@ -741,7 +910,6 @@ VALUES
 ('Los Angeles', 'city', 3, 8),
 ('Store #1', 'store', 1, NULL),
 ('Store #2', 'store', 1, NULL);
-
 
 -- Insert roles
 INSERT INTO `Role` (`role_name`, `description`) 
@@ -762,7 +930,6 @@ VALUES
 (1, 1, 2),  -- John has 2 Samsung Galaxy S21 in his cart
 (2, 4, 1);  -- Jane has 1 PS5 in her cart
 
-
 -- Insert orders
 INSERT INTO `Order` (`customer_id`, `contact_email`, `contact_phone`, `delivery_method`, `delivery_location_id`, `payment_method`, `total_amount`, `order_status`, `purchased_time`, `created_at`)
 VALUES
@@ -775,28 +942,6 @@ VALUES
 (1, 1, 0, 2, 799.99),  -- John ordered 2 Samsung Galaxy S21
 (2, 4, 0, 1, 499.99);  -- Jane ordered 1 PS5
 
-
--- Insert custom attributes for products
-INSERT INTO `Custom_Attribute` (`product_id`, `attribute_name`) 
-VALUES
-(1, 'Color'),
-(1, 'Storage'),
-(2, 'Color'),
-(2, 'Storage');
-
--- Insert custom attribute values for variants
-INSERT INTO `Custom_Attribute_Value` (`variant_id`, `attribute_id`, `attribute_value`) 
-VALUES
-(1, 1, 'Black'),  -- Samsung Galaxy S21 is Black
-(1, 2, '128GB'),  -- Samsung Galaxy S21 has 128GB storage
-(2, 1, 'Blue'),  -- iPhone 13 is Blue
-(2, 2, '256GB');  -- iPhone 13 has 256GB storage
-
-
-
-
-
 UPDATE `Variant` 
 SET interested = interested + 5
 WHERE `variant_id` = 1;  -- 5 people are interested in Samsung Galaxy S21
-

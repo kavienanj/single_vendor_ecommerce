@@ -11,51 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
-
-interface Product {
-  id: number
-  title: string
-  sku: string
-  weight: string
-  category: string
-  subCategory: string
-  price: number
-  image: string
-  colors?: string[]
-  storage?: string[]
-}
-
-interface CartItem {
-  id: number
-  title: string
-  price: number
-  image: string
-  quantity: number
-  selectedColor?: string
-  selectedStorage?: string
-}
-
-const products: Product[] = [
-  { id: 1, title: "Smartphone X", sku: "SP-001", weight: "180g", category: "Mobile", subCategory: "Smartphones", price: 699, image: "/placeholder.svg", colors: ["Black", "White", "Blue"], storage: ["64GB", "128GB", "256GB"] },
-  { id: 2, title: "Tablet Pro", sku: "TB-001", weight: "450g", category: "Mobile", subCategory: "Tablets", price: 499, image: "/placeholder.svg", colors: ["Silver", "Space Gray"], storage: ["128GB", "256GB", "512GB"] },
-  { id: 3, title: "Wireless Earbuds", sku: "AU-001", weight: "50g", category: "Audio", subCategory: "Earphones", price: 129, image: "/placeholder.svg", colors: ["White", "Black", "Pink"] },
-  { id: 4, title: "Bluetooth Speaker", sku: "AU-002", weight: "300g", category: "Audio", subCategory: "Speakers", price: 79, image: "/placeholder.svg", colors: ["Black", "Blue", "Red"] },
-  { id: 5, title: "Smart Watch", sku: "WR-001", weight: "40g", category: "Wearable", subCategory: "Smartwatches", price: 199, image: "/placeholder.svg", colors: ["Black", "Silver", "Gold"] },
-  { id: 6, title: "Fitness Tracker", sku: "WR-002", weight: "25g", category: "Wearable", subCategory: "Fitness Bands", price: 89, image: "/placeholder.svg", colors: ["Black", "Blue", "Pink"] },
-]
+import { useEcommerce } from "@/contexts/EcommerceContext"
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showSuggestions, setShowSuggestions] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
-
-  const cart = [
-    { id: 1, title: "Smartphone X", price: 699, image: "/placeholder.svg", quantity: 2, selectedColor: "Black", selectedStorage: "128GB" },
-    { id: 2, title: "Wireless Earbuds", price: 129, image: "/placeholder.svg", quantity: 1, selectedColor: "White" },
-  ];
+  const { cart, products } = useEcommerce();
 
   const searchSuggestions = products.filter(product =>
-    product.title.toLowerCase().includes(searchQuery.toLowerCase())
+    product.product_name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   useEffect(() => {
@@ -95,14 +60,14 @@ export default function Header() {
               <div className="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg max-h-60 overflow-auto">
                 {searchSuggestions.map((product) => (
                   <div
-                    key={product.id}
+                    key={product.product_id}
                     className="p-2 hover:bg-gray-100 cursor-pointer"
                     onClick={() => {
-                      setSearchQuery(product.title)
+                      setSearchQuery(product.product_name)
                       setShowSuggestions(false)
                     }}
                   >
-                    {product.title}
+                    {product.product_name}
                   </div>
                 ))}
               </div>

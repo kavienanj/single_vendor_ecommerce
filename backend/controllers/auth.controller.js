@@ -7,37 +7,64 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Controller function for user registration
 exports.registerUser = async (req, res) => {
-    const { first_name, last_name, email, password, phone_number } = req.body;
+    const { is_guest, first_name, last_name, email, password, phone_number } = req.body;
 
     try {
-        // Check if the user already exists
-        const existingUser = await model.findUserByEmail(email);
-        if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
+        let token;
+        if (is_guest) {
+            // Create new guest user
+            const user = await model.createUser({
+                first_name: "Guest",
+                last_name: "User",
+                email: null,
+                password_hash: null,
+                phone_number: null,
+                is_guest: true,
+                role_id: 3,
+            });
+
+            // Generate JWT token
+            token = jwt.sign({
+                id: user.user_id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                role_id: user.role_id,
+            }, JWT_SECRET);
+        } else {
+
+            if (!first_name || !last_name || !email || !password || !phone_number) {
+                return res.status(400).json({ message: 'Please fill in all fields' });
+            }
+
+            // Check if the user already exists
+            const existingUser = await model.findUserByEmail(email);
+            if (existingUser) {
+                return res.status(400).json({ message: 'User already exists' });
+            }
+
+            // Hash the password
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // Create new user
+            const user = await model.createUser({
+                first_name,
+                last_name,
+                email,
+                password_hash: hashedPassword,
+                phone_number,
+                is_guest: false,
+                role_id: 2, // Default role_id for registered users
+            });
+
+            // Generate JWT token
+            token = jwt.sign({
+                id: user.user_id,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                role_id: user.role_id,
+            }, JWT_SECRET, { expiresIn: '1h' });
         }
-
-        // Hash the password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create new user
-        const user = await model.createUser({
-            first_name,
-            last_name,
-            email,
-            password_hash: hashedPassword,
-            phone_number,
-            is_guest: false,
-            role_id: 2, // Default role_id for registered users
-        });
-
-        // Generate JWT token
-        const token = jwt.sign({
-            id: user.user_id,
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            role_id: user.role_id,
-        }, JWT_SECRET, { expiresIn: '1h' });
 
         res.status(201).json({ message: 'User registered successfully!', token });
     } catch (err) {
