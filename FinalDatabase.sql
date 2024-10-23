@@ -231,16 +231,6 @@ CREATE TABLE `Order` (
 );
 
 
-CREATE TABLE `DeliveryEstimate` (
-  `delivery_estimate_id` INT AUTO_INCREMENT,
-  `delivery_method_id` INT,
-  `delivery_location_id` INT,
-  `base_delivery_days` INT NOT NULL,
-  PRIMARY KEY (`delivery_estimate_id`),
-  
-  FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`),
-  UNIQUE (`delivery_method_id`, `delivery_location_id`)
-);
 
 CREATE TABLE `OrderItem` (
   `order_item_id` INT AUTO_INCREMENT,
@@ -803,10 +793,7 @@ VALUES
 (2, 2, '256GB');  -- iPhone 13 has 256GB storage
 
 
-INSERT INTO `DeliveryEstimate` (`delivery_method_id`, `delivery_location_id`, `base_delivery_days`)
-VALUES
-(1, 1, 2),  -- Store Pickup for New York takes 2 days
-(1, 2, 3);  -- Store Pickup for Los Angeles takes 3 days
+
 
 
 UPDATE `Variant` 

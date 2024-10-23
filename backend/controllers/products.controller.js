@@ -62,3 +62,36 @@ exports.deleteProduct = async (req, res) => {
         });
     }
 };
+
+// Controller function to get a product by ID
+exports.getProductById = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const response = await model.getProductById({ id });
+        res.json(response);
+    } catch (err) {
+        console.error('Error fetching product:', err);
+        res.status(500).json({
+            message: 'Error fetching product',
+            error: err.message
+        });
+    }
+};
+
+// Controller function to get all products with variants and attributes
+exports.getAllProductsWithVariantsAndAttributes = async (req, res) => {
+    try {
+        const products = await model.getAllProductsWithVariantsAndAttributes();
+        res.json(products);
+    } catch (err) {
+        console.error('Error fetching product details:', err);
+        res.status(500).json({ message: 'Error fetching product details', error: err.message });
+    }
+};
+
+
+
+
+
+

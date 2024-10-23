@@ -59,3 +59,30 @@ exports.deleteProduct = ({ id }) => {
         });
     });
 }
+
+// Function to get all products with their variants and attributes
+exports.getAllProductsWithVariantsAndAttributes = () => {
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT 
+                p.product_id, p.title, p.description, p.sku, p.weight,
+                v.variant_id, v.name AS variant_name, v.price, v.image_url,
+                a.attribute_name, av.attribute_value
+            FROM Product p
+            LEFT JOIN Variant v ON p.product_id = v.product_id
+            LEFT JOIN Custom_Attribute_Value av ON v.variant_id = av.variant_id
+            LEFT JOIN Custom_Attribute a ON av.attribute_id = a.attribute_id
+            ORDER BY p.product_id, v.variant_id;
+        `;
+
+        db.query(query, (err, rows) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(rows);
+        });
+    });
+};
+
+
+
