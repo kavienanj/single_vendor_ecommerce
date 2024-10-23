@@ -19,7 +19,20 @@ exports.createProduct = ({ title, description, sku, weight }) => {
 // Function to get all products
 exports.getAllProducts = () => {
     return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM Product`;
+        const query = `
+        SELECT 
+            p.product_id as product_id,
+            p.title AS product_name,
+            p.description AS product_description,
+            p.sku,
+            p.weight,
+            JSON_ARRAYAGG(c.category_name) AS categories
+        FROM Product p
+        JOIN Product_Category_Match pcm ON p.product_id = pcm.product_id
+        JOIN Category c ON pcm.category_id = c.category_id
+        GROUP BY p.product_id
+        ORDER BY p.title;
+    `;
 
         db.query(query, (err, result) => {
             if (err) {
@@ -60,8 +73,8 @@ exports.deleteProduct = ({ id }) => {
     });
 }
 
-// Function to get all products with their variants and attributes
-exports.getAllProductsWithVariantsAndAttributes = () => {
+// Function to get product with variants and attributes
+exports.getProductWithVariantsAndAttributes = ({ id }) => {
     return new Promise((resolve, reject) => {
         const query = `
             SELECT 
@@ -72,10 +85,11 @@ exports.getAllProductsWithVariantsAndAttributes = () => {
             LEFT JOIN Variant v ON p.product_id = v.product_id
             LEFT JOIN Custom_Attribute_Value av ON v.variant_id = av.variant_id
             LEFT JOIN Custom_Attribute a ON av.attribute_id = a.attribute_id
+            WHERE p.product_id = ?
             ORDER BY p.product_id, v.variant_id;
         `;
 
-        db.query(query, (err, rows) => {
+        db.query(query, [id], (err, rows) => {
             if (err) {
                 return reject(err);
             }
@@ -83,6 +97,3 @@ exports.getAllProductsWithVariantsAndAttributes = () => {
         });
     });
 };
-
-
-
