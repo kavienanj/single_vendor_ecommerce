@@ -94,9 +94,9 @@ export function HomePageComponent() {
         </aside>
         <div className="flex-1">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-row gap-2">
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="sm:w-[180px]">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -106,7 +106,7 @@ export function HomePageComponent() {
                 </SelectContent>
               </Select>
               <Select value={showCount} onValueChange={setShowCount}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="sm:w-[180px]">
                   <SelectValue placeholder="Show" />
                 </SelectTrigger>
                 <SelectContent>

@@ -8,16 +8,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { useEcommerce } from "@/contexts/EcommerceContext"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showSuggestions, setShowSuggestions] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
   const { cart, products } = useEcommerce();
+  const { user, logout, isAdmin, isGuest, isCustomer } = useAuth();
 
   const searchSuggestions = products.filter(product =>
     product.product_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -92,9 +96,41 @@ export default function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuLabel>
+                {isGuest() && (
+                  `Guest User`
+                )}
+                {isCustomer() && (
+                  `Welcome, ${user?.first_name}`
+                )}
+                {isAdmin() && (
+                  `Welcome, Admin`
+                )}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {isCustomer() && (
+                <DropdownMenuItem>Profile</DropdownMenuItem>
+              )}
+              {isGuest() && (
+                <Link href="/sign-in">
+                  <DropdownMenuItem>
+                    Sign In
+                  </DropdownMenuItem>
+                </Link>
+              )}
+              {isAdmin() && (
+                <Link href="/admin">
+                  <DropdownMenuItem>
+                    Admin Panel
+                  </DropdownMenuItem>
+                </Link>
+              )}
               <DropdownMenuItem>My Orders</DropdownMenuItem>
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+              {isCustomer() && (
+                <DropdownMenuItem onClick={logout}>
+                  Logout
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

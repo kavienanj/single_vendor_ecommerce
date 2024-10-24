@@ -662,12 +662,6 @@ END$$
 
 DELIMITER ;
 
-INSERT INTO `Role` (`role_name`, `description`) 
-VALUES 
-    ('Admin', 'Has full access to the system'),
-    ('User', 'Registered customer with limited access'),
-    ('Guest', 'Unregistered customer with minimal access');
-
 -- Insert warehouse data
 INSERT INTO `Warehouse` (`location`, `capacity`, `available_capacity`) 
 VALUES 
@@ -921,8 +915,8 @@ VALUES
 -- Insert users
 INSERT INTO `User` (`first_name`, `last_name`, `email`, `password_hash`, `phone_number`, `delivery_location_id`, `is_guest`, `role_id`, `created_at`)
 VALUES 
-('John', 'Doe', 'john@example.com', SHA2('password123', 256), '1234567890', 1, 0, 2, NOW()),
-('Jane', 'Smith', 'jane@example.com', SHA2('password456', 256), '0987654321', 2, 0, 2, NOW());
+('Admin', 'C', 'admin@c.com', '$2a$10$j/DeFvwmLpBjAbJjFRJo6uwQb8/0UnejZOqWKmXTwASwwm.m5DDxq', '1234567890', 1, 0, 1, NOW()),
+('Jane', 'Smith', 'jane@example.com', '$2a$10$j/DeFvwmLpBjAbJjFRJo6uwQb8/0UnejZOqWKmXTwASwwm.m5DDxq', '0987654321', 2, 0, 2, NOW());
 
 -- Insert cart items for users
 INSERT INTO `Cart` (`user_id`, `variant_id`, `quantity`) 

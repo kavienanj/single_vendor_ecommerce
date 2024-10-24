@@ -32,7 +32,7 @@ exports.registerUser = async (req, res) => {
             }, JWT_SECRET);
         } else {
 
-            if (!first_name || !last_name || !email || !password || !phone_number) {
+            if (!first_name || !last_name || !email || !password) {
                 return res.status(400).json({ message: 'Please fill in all fields' });
             }
 
