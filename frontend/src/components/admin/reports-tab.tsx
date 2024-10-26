@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,6 +23,9 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+import { apiClient } from '@/services/axiosClient';
+import { Product } from '@/contexts/EcommerceContext';
+import { SelectProductsPopover } from './components/select-product-popover';
 
 interface ReportData {
   type: 'bar' | 'pie';
@@ -32,10 +35,9 @@ interface ReportData {
 export function ReportsTab() {
   const [selectedReport, setSelectedReport] = useState('');
   const [reportYear, setReportYear] = useState('');
-  /* */
   const [startDate, setStartDate] = useState(''); // New state for start date
   const [endDate, setEndDate] = useState(''); // New state for end date
-  /* */
+	const [products, setProducts] = useState<Product[]>([]);
   const [reportPeriod, setReportPeriod] = useState('');
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,7 +49,7 @@ export function ReportsTab() {
     setReportData(null); // Reset report data before generating
 
     try {
-      let url = 'http://localhost:3000'; // Base API URL
+      let url = '';
       let queryParams = '';
 
       switch (selectedReport) {
@@ -73,11 +75,15 @@ export function ReportsTab() {
           throw new Error('Invalid report type selected');
       }
 
-      const response = await fetch(`${url}${queryParams}`);
-      const data = await response.json();
+      const response = await apiClient.get(url + queryParams);
+      const data = await response.data;
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(data.message || 'Failed to generate report');
+      }
+
+      if (!data.data || data.data.length === 0) {
+        throw new Error('No data found for the selected report');
       }
 
       // Handle the response based on the report type
@@ -145,7 +151,8 @@ export function ReportsTab() {
           </table>
         </div>
       );
-    }if (reportData.type === 'bar') {
+    }
+    if (reportData.type === 'bar') {
       const maxSalesValue = Math.max(...reportData.data.map(item => item.total_sales)); // Replace 'total_sales' with your actual sales key
       return (
         <ResponsiveContainer width="100%" height={300}>
@@ -161,8 +168,6 @@ export function ReportsTab() {
       );
     }
     
-  
-    /*  */
     if (reportData.type === 'pie') {
       //const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
       const COLORS = [
@@ -193,12 +198,17 @@ export function ReportsTab() {
           </PieChart>
         </ResponsiveContainer>
       );
-    
-    
     }
-}
+  }
 
-    
+	const fetchProducts = async () => {
+		const fetchedProducts = await apiClient.get('/products').then(res => res.data);
+		setProducts(fetchedProducts);
+	};
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -269,11 +279,9 @@ export function ReportsTab() {
                 <label htmlFor="product-id" className="block text-sm font-medium text-gray-700">
                   Product ID
                 </label>
-                <Input
-                  id="product-id"
-                  placeholder="Enter product ID"
-                  value={reportPeriod}
-                  onChange={(e) => setReportPeriod(e.target.value)}
+                <SelectProductsPopover
+                  products={products}
+                  onSelect={(product) => setReportPeriod(product.product_id.toString())}
                 />
               </div>
             )}
@@ -302,4 +310,3 @@ export function ReportsTab() {
     </div>
   );
 }
-

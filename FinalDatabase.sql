@@ -916,25 +916,44 @@ VALUES
 INSERT INTO `User` (`first_name`, `last_name`, `email`, `password_hash`, `phone_number`, `delivery_location_id`, `is_guest`, `role_id`, `created_at`)
 VALUES 
 ('Admin', 'C', 'admin@c.com', '$2a$10$j/DeFvwmLpBjAbJjFRJo6uwQb8/0UnejZOqWKmXTwASwwm.m5DDxq', '1234567890', 1, 0, 1, NOW()),
-('Jane', 'Smith', 'jane@example.com', '$2a$10$j/DeFvwmLpBjAbJjFRJo6uwQb8/0UnejZOqWKmXTwASwwm.m5DDxq', '0987654321', 2, 0, 2, NOW());
+('Jane', 'Smith', 'jane@example.com', '$2a$10$j/DeFvwmLpBjAbJjFRJo6uwQb8/0UnejZOqWKmXTwASwwm.m5DDxq', '0987654321', 2, 0, 2, NOW()),
+('John', 'Doe', 'john@example.com', '$2a$10$j/DeFvwmLpBjAbJjFRJo6uwQb8/0UnejZOqWKmXTwASwwm.m5DDxq', '0987654321', 2, 0, 2, NOW()),
+('Nick', 'Noah', 'nick@example.com', '$2a$10$j/DeFvwmLpBjAbJjFRJo6uwQb8/0UnejZOqWKmXTwASwwm.m5DDxq', '0987654321', 2, 0, 2, NOW()),
+('Pilip', 'Man', 'pilip@example.com', '$2a$10$j/DeFvwmLpBjAbJjFRJo6uwQb8/0UnejZOqWKmXTwASwwm.m5DDxq', '0987654321', 2, 0, 2, NOW());
 
 -- Insert cart items for users
 INSERT INTO `Cart` (`user_id`, `variant_id`, `quantity`) 
 VALUES
-(1, 1, 2),  -- John has 2 Samsung Galaxy S21 in his cart
-(2, 4, 1);  -- Jane has 1 PS5 in her cart
+(2, 1, 2),  -- John has 2 Samsung Galaxy S21 in his cart
+(3, 4, 1);  -- Jane has 1 PS5 in her cart
 
--- Insert orders
-INSERT INTO `Order` (`customer_id`, `contact_email`, `contact_phone`, `delivery_method`, `delivery_location_id`, `payment_method`, `total_amount`, `order_status`, `purchased_time`, `created_at`)
-VALUES
-(1, 'john@example.com', '1234567890', 'delivery', 1, 'card', 1599.98, 'Shipped', NOW(), NOW()),
-(2, 'jane@example.com', '0987654321', 'store_pickup', 3, 'cash_on_delivery', 499.99, 'Completed', NOW(), NOW());
+INSERT INTO `Order` (`customer_id`, `contact_email`, `contact_phone`, `delivery_method`, `delivery_location_id`, `payment_method`, `total_amount`, `order_status`, `purchased_time`, `delivery_estimate`, `created_at`, `updated_at`)
+VALUES 
+(2, 'jane@example.com', '555-123-4567', 'delivery', 3, 'card', 1299.99, 'Completed', '2023-01-05 09:30:00', 7, NOW(), NOW()),
+(3, 'john@example.com', '444-555-6666', 'store_pickup', 4, 'card', 99.99, 'Failed', '2023-04-07 11:45:00', 0, NOW(), NOW()),
+(4, 'nick@example.com', '333-222-1111', 'delivery', 1, 'card', 399.99, 'Completed', '2023-10-09 08:20:00', 4, NOW(), NOW()),
+(5, 'pilip@example.com', '777-888-9999', 'delivery', 1, 'cash_on_delivery', 1199.99, 'Processing', '2024-01-11 13:10:00', 6, NOW(), NOW()),
+(2, 'jane@example.com', '222-333-4444', 'store_pickup', 2, 'card', 699.99, 'Shipped', '2024-01-13 16:25:00', 1, NOW(), NOW()),
+(3, 'john@example.com', '111-444-7777', 'delivery', 3, 'card', 1499.99, 'Completed', '2024-05-15 14:50:00', 5, NOW(), NOW()),
+(4, 'nick@example.com', '666-555-4444', 'store_pickup', 4, 'cash_on_delivery', 799.99, 'Failed', '2023-01-17 10:40:00', 0, NOW(), NOW()),
+(5, 'pilip@example.com', '888-999-0000', 'delivery', 1, 'card', 299.99, 'Processing', '2024-10-19 15:35:00', 3, NOW(), NOW());
 
--- Insert order items
-INSERT INTO `OrderItem` (`order_id`, `variant_id`, `discount`, `quantity`, `price`)
-VALUES
-(1, 1, 0, 2, 799.99),  -- John ordered 2 Samsung Galaxy S21
-(2, 4, 0, 1, 499.99);  -- Jane ordered 1 PS5
+INSERT INTO `OrderItem` (order_id, variant_id, discount, quantity, price) 
+VALUES 
+(1, 4, 0, 1, 1299.99),  -- Jane's order has 1 iPhone 14 Pro
+(1, 2, 0, 2, 1099.99),  -- Jane's order has 2 MacBook Air M2
+(1, 6, 0, 1, 399.99),   -- Jane's order has 1 Samsung Galaxy A52
+(2, 7, 0, 1, 99.99),    -- John's order has 1 JBL Flip 6
+(2, 8, 0, 2, 249.99),   -- John's order has 1 Sony SRS-XB43
+(3, 3, 0, 1, 399.99),  -- Nick's order has 1 Samsung Galaxy A52
+(3, 14, 0, 3, 389.97),  -- Nick's order has 3 Bose SoundLink Revolve
+(3, 3, 0, 1, 249.99),  -- Nick's order has 1 Sony SRS-XB43
+(4, 1, 0, 1, 1199.99),  -- Pilip's order has 1 MacBook Air M2
+(4, 3, 0, 1, 799.99),   -- Pilip's order has 1 HP Pavilion Desktop
+(5, 5, 0, 1, 699.99),   -- Jane's order has 1 OnePlus 11
+(6, 16, 0, 1, 1499.99),  -- John's order has 1 Sony SRS-XB43
+(7, 12, 0, 1, 799.99),  -- Nick's order has 1 Samsung Galaxy A52
+(8, 18, 0, 1, 299.99);   -- Pilip's order has 1 OnePlus 11
 
 UPDATE `Variant` 
 SET interested = interested + 5
