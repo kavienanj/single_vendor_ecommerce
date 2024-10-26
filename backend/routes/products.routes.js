@@ -14,4 +14,7 @@ router.put('/products/:id', productsController.updateProduct);
 // Route to delete a product
 router.delete('/products/:id', productsController.deleteProduct);
 
+// Route to get all products with variants and attributes
+router.get('/products/:id', productsController.getProductWithVariantsAndAttributes);
+
 module.exports = router;

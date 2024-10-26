@@ -1,4 +1,3 @@
-const { placeOrder: payment } = require('../controllers/cart.controller');
 const db = require('../db'); // Adjust the path as needed
 
 exports.addtoCart = ({ userId, variant_id, quantity }) => {
@@ -19,11 +18,11 @@ exports.addtoCart = ({ userId, variant_id, quantity }) => {
 exports.showCart = ({ userId }) => {
     return new Promise((resolve, reject) => {
        const query = `call ShowCartofUser(?);` ; 
-        db.query(query, [userId], (err, result) => {
+        db.query(query, [userId], (err, results) => {
             if (err) {
                 return reject(err);
             }
-            resolve(result);
+            resolve(results[0]);
         });
     });
 }

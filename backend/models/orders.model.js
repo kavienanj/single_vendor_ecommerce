@@ -17,7 +17,7 @@ exports.createOrder = ({ customerId, contactEmail, contactPhone, deliveryMethod,
     const purchasedTime = new Date();
     const createdAt = new Date();
     const query = `
-        INSERT INTO Order (customer_id, contact_email, contact_phone, delivery_method, delivery_location_id, payment_method, total_amount, order_status, purchased_time, delivery_estimate, created_at)
+        INSERT INTO \`Order\` (customer_id, contact_email, contact_phone, delivery_method, delivery_location_id, payment_method, total_amount, order_status, purchased_time, delivery_estimate, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     return runQuery(query, [customerId, contactEmail, contactPhone, deliveryMethod, deliveryLocationId, paymentMethod, totalAmount, orderStatus, purchasedTime, deliveryEstimate, createdAt]);
@@ -25,13 +25,13 @@ exports.createOrder = ({ customerId, contactEmail, contactPhone, deliveryMethod,
 
 // for admin to see all orders
 exports.getAllOrders = () => {
-    const query = `SELECT * FROM Order`;
+    const query = "SELECT * FROM `Order`";
     return runQuery(query);
 };
 
 // Function to get an order by ID
 exports.getOrderById = (orderId) => {
-    const query = `SELECT * FROM Order WHERE order_id = ?`;
+    const query = "SELECT * FROM `Order` WHERE order_id = ?";
     return runQuery(query, [orderId]);
 };
 
@@ -41,7 +41,7 @@ exports.getOrderById = (orderId) => {
 // THIS IS NOT PRACTICAL        
 exports.updateOrder = ({ orderId, orderStatus, deliveryEstimate, updatedAt = new Date() }) => {
     const query = `
-        UPDATE Order SET order_status = ?, delivery_estimate = ?, updated_at = ? WHERE order_id = ?`;
+        UPDATE \`Order\` SET order_status = ?, delivery_estimate = ?, updated_at = ? WHERE order_id = ?`;
     return runQuery(query, [orderStatus, deliveryEstimate, updatedAt, orderId]);
 };
 
@@ -49,6 +49,45 @@ exports.updateOrder = ({ orderId, orderStatus, deliveryEstimate, updatedAt = new
 // this should allowed only for pending orders
 // OTHERWISE NOT!!!
 exports.deleteOrder = (orderId) => {
-    const query = `DELETE FROM Order WHERE order_id = ?`;
+    const query = "DELETE FROM `Order` WHERE order_id = ?";
     return runQuery(query, [orderId]);
 };
+
+// Function to get orders by user ID
+exports.getUserOrders = (userId) => {
+    const query = `
+    SELECT 
+    o.order_id,
+    o.customer_id,
+    o.contact_email,
+    o.contact_phone,
+    o.delivery_method,
+    o.delivery_location_id,
+    o.payment_method,
+    o.total_amount,
+    o.order_status,
+    o.purchased_time,
+    o.delivery_estimate,
+    o.created_at,
+    o.updated_at,
+    JSON_ARRAYAGG(
+        JSON_OBJECT(
+            'product_name', p.title,
+            'variant_name', v.name,
+            'price', ROUND(v.price, 2),
+            'quantity', oi.quantity,
+            'total_price', ROUND(v.price * oi.quantity, 2)
+        )
+    ) AS items
+FROM \`Order\` o
+JOIN OrderItem oi ON o.order_id = oi.order_id
+JOIN Variant v ON oi.variant_id = v.variant_id
+JOIN Product p ON v.product_id = p.product_id
+WHERE o.customer_id = ?
+GROUP BY o.order_id
+ORDER BY o.order_id;
+
+`;
+    return runQuery(query, [userId]);
+};
+
