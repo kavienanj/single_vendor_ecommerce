@@ -38,49 +38,60 @@ exports.getTopMonthsForProductSales = async (req, res) => {
     }
 };
 
+
 exports.getCategoryWithMostOrders = async (req, res) => {
     try {
         const reportData = await reportsModel.getCategoryWithMostOrders();
-        const topCategory = reportData.length > 0 ? reportData[0] : null;  // Get only the first result
         
-        if (!topCategory) {
+        // Get the top 10 categories or fewer if there are less than 10 results
+        const topCategories = reportData.slice(0, 10);  
+        
+        if (topCategories.length === 0) {
             return res.status(404).json({ message: 'No categories found with orders' });
         }
 
         res.status(200).json({
-            message: `Category with most orders`,
-            data: topCategory,
+            message: 'Top 10 categories with most orders',
+            data: topCategories,
         });
     } catch (err) {
-        console.error('Error fetching category with most orders:', err);
-        res.status(500).json({ message: 'Error fetching category with most orders', error: err.message });
+        console.error('Error fetching top categories with most orders:', err);
+        res.status(500).json({ message: 'Error fetching top categories with most orders', error: err.message });
     }
 };
+
+
 
 exports.getProductsBySales = async (req, res) => {
     const { start_date, end_date } = req.query;
 
+    // Check for required query parameters
     if (!start_date || !end_date) {
         return res.status(400).json({ message: 'Both start_date and end_date are required query parameters' });
     }
 
     try {
+        // Fetch the top products from the model
         const reportData = await reportsModel.getProductsBySales(start_date, end_date);
-        const topProduct = reportData.length > 0 ? reportData[0] : null; // Get only the first product
-
-        if (!topProduct) {
+        
+        // Check if any products were returned
+        if (reportData.length === 0) {
             return res.status(404).json({ message: 'No products found for the given period' });
         }
 
+        // Slice the array to get the top 10 products
+        const topProducts = reportData.slice(0, 10);
+
         res.status(200).json({
-            message: `Top product with most sales from ${start_date} to ${end_date}`,
-            data: topProduct,
+            message: `Top 10 products with most sales from ${start_date} to ${end_date}`,
+            data: topProducts,
         });
     } catch (err) {
         console.error('Error fetching top products:', err);
         res.status(500).json({ message: 'Error fetching top products', error: err.message });
     }
 };
+
 
 exports.getQuarterlySalesReport = async (req, res) => {
     console.log(req.query);  // Log the query object to debug

@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select';
 import {
   BarChart as RechartsBarChart,
   Bar,
@@ -22,91 +22,155 @@ import {
   PieChart,
   Pie,
   Cell,
-} from 'recharts'
+} from 'recharts';
 
 interface ReportData {
-  type: 'bar' | 'pie'
-  data: { [key: string]: any }[]
+  type: 'bar' | 'pie';
+  data: { [key: string]: any }[];
 }
 
 export function ReportsTab() {
-  const [selectedReport, setSelectedReport] = useState('')
-  const [reportYear, setReportYear] = useState('')
-  const [reportPeriod, setReportPeriod] = useState('')
-  const [reportData, setReportData] = useState<ReportData | null>(null)
+  const [selectedReport, setSelectedReport] = useState('');
+  const [reportYear, setReportYear] = useState('');
+  /* */
+  const [startDate, setStartDate] = useState(''); // New state for start date
+  const [endDate, setEndDate] = useState(''); // New state for end date
+  /* */
+  const [reportPeriod, setReportPeriod] = useState('');
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const generateReport = () => {
-    // Simulated report data generation
-    switch (selectedReport) {
-      case 'quarterly':
-        setReportData({
-          type: 'bar',
-          data: [
-            { quarter: 'Q1', sales: 12000 },
-            { quarter: 'Q2', sales: 19000 },
-            { quarter: 'Q3', sales: 15000 },
-            { quarter: 'Q4', sales: 22000 },
-          ]
-        })
-        break
-      case 'topProducts':
-        setReportData({
-          type: 'bar',
-          data: [
-            { product: 'Widget A', sales: 1200 },
-            { product: 'Gadget B', sales: 980 },
-            { product: 'Doohickey C', sales: 850 },
-            { product: 'Thingamajig D', sales: 750 },
-            { product: 'Whatchamacallit E', sales: 600 },
-          ]
-        })
-        break
-      case 'categoryOrders':
-        setReportData({
-          type: 'pie',
-          data: [
-            { category: 'Electronics', value: 400 },
-            { category: 'Clothing', value: 300 },
-            { category: 'Books', value: 200 },
-            { category: 'Home & Garden', value: 150 },
-            { category: 'Toys', value: 100 },
-          ]
-        })
-        break
-      case 'productInterest':
-        setReportData({
-          type: 'bar',
-          data: [
-            { period: 'Jan', interest: 50 },
-            { period: 'Feb', interest: 80 },
-            { period: 'Mar', interest: 120 },
-            { period: 'Apr', interest: 90 },
-            { period: 'May', interest: 110 },
-            { period: 'Jun', interest: 150 },
-          ]
-        })
-        break
+  const generateReport = async () => {
+    setLoading(true);
+    setError(null); // Clear previous errors
+    setReportData(null); // Reset report data before generating
+
+    try {
+      let url = 'http://localhost:3000'; // Base API URL
+      let queryParams = '';
+
+      switch (selectedReport) {
+        case 'quarterly':
+          url += '/sales-report';
+          queryParams = `?year=${reportYear}`;
+          break;
+          case 'topProducts':
+            url += '/most-selling-product';
+            queryParams = `?start_date=${startDate}&end_date=${endDate}`; // Use new states for dates
+            break;
+        case 'categoryOrders':
+          url += '/most-orders';
+          break;
+        case 'productInterest':
+          url += '/most-interest';
+          queryParams = `?product_id=${reportPeriod}`; // Assuming reportPeriod holds product ID for this case
+          break;
+        case 'customerReport':
+          url += '/customer-report';
+          break;
+        default:
+          throw new Error('Invalid report type selected');
+      }
+
+      const response = await fetch(`${url}${queryParams}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to generate report');
+      }
+
+      // Handle the response based on the report type
+      switch (selectedReport) {
+        case 'quarterly':
+          setReportData({ type: 'bar', data: data.data });
+          break;
+        case 'topProducts':
+          setReportData({ type: 'bar', data: data.data });
+          break;
+        case 'categoryOrders':
+          setReportData({ type: 'pie', data: data.data });
+          break;
+        case 'productInterest':
+          setReportData({ type: 'pie', data: data.data });
+          break;
+        case 'customerReport':
+          setReportData({ type: 'bar', data: data.data }); // Assuming bar chart for customer report
+          break;
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error generating report');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   const renderChart = () => {
-    if (!reportData) return null
-
-    if (reportData.type === 'bar') {
+    if (!reportData) return null;
+    /*  */
+    if (selectedReport === 'customerReport') {
+      return (
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-gray-200 divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Customer Name</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Purchased Time</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Order Status</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Variant Name</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item Price</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total Price</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {reportData.data.map((item, index) => (
+                <tr key={index}>
+                  <td className="px-4 py-2">{item.customer_name}</td>
+                  <td className="px-4 py-2">{item.email}</td>
+                  <td className="px-4 py-2">{item.order_id}</td>
+                  <td className="px-4 py-2">{item.purchased_time}</td>
+                  <td className="px-4 py-2">{item.order_status}</td>
+                  <td className="px-4 py-2">{item.total_amount}</td>
+                  <td className="px-4 py-2">{item.variant_name}</td>
+                  <td className="px-4 py-2">{item.quantity}</td>
+                  <td className="px-4 py-2">{item.item_price}</td>
+                  <td className="px-4 py-2">{item.total_price}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }if (reportData.type === 'bar') {
+      const maxSalesValue = Math.max(...reportData.data.map(item => item.total_sales)); // Replace 'total_sales' with your actual sales key
       return (
         <ResponsiveContainer width="100%" height={300}>
           <RechartsBarChart data={reportData.data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey={Object.keys(reportData.data[0])[0]} />
-            <YAxis />
+            <YAxis domain={[0, Math.ceil(maxSalesValue / 10) * 10]} /> {/* Set domain to extend the Y-axis */}
             <Tooltip />
             <Legend />
             <Bar dataKey={Object.keys(reportData.data[0])[1]} fill="#8884d8" />
           </RechartsBarChart>
         </ResponsiveContainer>
-      )
-    } else if (reportData.type === 'pie') {
-      const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
+      );
+    }
+    
+  
+    /*  */
+    if (reportData.type === 'pie') {
+      //const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+      const COLORS = [
+        '#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', 
+        '#FF6347', '#36A2EB', '#A569BD', '#FF9F40', '#F08080', 
+        '#FFD700', '#ADFF2F', '#40E0D0', '#FF4500', '#DA70D6'
+    ];
+    
       return (
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
@@ -116,8 +180,9 @@ export function ReportsTab() {
               cy="50%"
               outerRadius={100}
               fill="#8884d8"
-              dataKey="value"
-              label={({ category, percent }) => `${category} ${(percent * 100).toFixed(0)}%`}
+              dataKey={Object.keys(reportData.data[0])[1]} // Use the second key for values
+              nameKey={Object.keys(reportData.data[0])[0]} // Use the first key for categories
+              label={({ percent, name }) => `${name} ${(percent * 100).toFixed(0)}%`}
             >
               {reportData.data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -127,9 +192,13 @@ export function ReportsTab() {
             <Legend />
           </PieChart>
         </ResponsiveContainer>
-      )
+      );
+    
+    
     }
-  }
+}
+
+    
 
   return (
     <div className="space-y-4">
@@ -146,14 +215,16 @@ export function ReportsTab() {
             <SelectContent>
               <SelectItem value="quarterly">Quarterly Sales Report</SelectItem>
               <SelectItem value="topProducts">Top Selling Products</SelectItem>
-              <SelectItem value="categoryOrders">Product Category Orders</SelectItem>
+              <SelectItem value="categoryOrders">Top Product Categories</SelectItem>
               <SelectItem value="productInterest">Product Interest Over Time</SelectItem>
+              <SelectItem value="customerReport">Customer Order Report</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
         {selectedReport && (
           <div className="space-y-2">
-            {(selectedReport === 'quarterly' || selectedReport === 'topProducts') && (
+            {(selectedReport === 'quarterly' ) && (
               <div>
                 <label htmlFor="report-year" className="block text-sm font-medium text-gray-700">
                   Year
@@ -167,14 +238,40 @@ export function ReportsTab() {
                 />
               </div>
             )}
-            {(selectedReport === 'topProducts' || selectedReport === 'categoryOrders' || selectedReport === 'productInterest') && (
+            {selectedReport === 'topProducts' && ( // New input fields for date range
+              <div className="space-y-2">
+                <div>
+                  <label htmlFor="start-date" className="block text-sm font-medium text-gray-700">
+                    Start Date
+                  </label>
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="end-date" className="block text-sm font-medium text-gray-700">
+                    End Date
+                  </label>
+                  <Input
+                    id="end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+            {selectedReport === 'productInterest' && (
               <div>
-                <label htmlFor="report-period" className="block text-sm font-medium text-gray-700">
-                  Time Period
+                <label htmlFor="product-id" className="block text-sm font-medium text-gray-700">
+                  Product ID
                 </label>
                 <Input
-                  id="report-period"
-                  placeholder="e.g., Last 30 days, Q2 2023"
+                  id="product-id"
+                  placeholder="Enter product ID"
                   value={reportPeriod}
                   onChange={(e) => setReportPeriod(e.target.value)}
                 />
@@ -183,18 +280,26 @@ export function ReportsTab() {
           </div>
         )}
       </div>
-      <Button onClick={generateReport} disabled={!selectedReport}>Generate Report</Button>
+
+      <Button onClick={generateReport} disabled={!selectedReport || loading}>
+        {loading ? 'Generating...' : 'Generate Report'}
+      </Button>
+
+      {error && <p className="text-red-500">{error}</p>}
+
       {reportData && (
         <div className="mt-8">
           <h3 className="text-lg font-semibold mt-8 mb-4">
             {selectedReport === 'quarterly' && `Quarterly Sales Report for ${reportYear}`}
-            {selectedReport === 'topProducts' && `Top Selling Products in ${reportPeriod}`}
-            {selectedReport === 'categoryOrders' && `Product Category Orders in ${reportPeriod}`}
-            {selectedReport === 'productInterest' && `Product Interest Over ${reportPeriod}`}
+            {selectedReport === 'topProducts' && `Top Selling Products Report`}
+            {selectedReport === 'categoryOrders' && `Top Product Categories`}
+            {selectedReport === 'productInterest' && `Product Interest for Product ID ${reportPeriod}`}
+            {selectedReport === 'customerReport' && `Customer Order Report`}
           </h3>
           {renderChart()}
         </div>
       )}
     </div>
-  )
+  );
 }
+

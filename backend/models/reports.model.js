@@ -1,6 +1,7 @@
 const db = require('../db');
 
 // Customer Report Model
+
 exports.getCustomerOrderReport = () => {
     return new Promise((resolve, reject) => {
         const query = `
@@ -15,7 +16,7 @@ exports.getCustomerOrderReport = () => {
                 v.name AS variant_name,
                 oi.quantity,
                 oi.price AS item_price,
-                (oi.quantity * oi.price) AS total_price
+                ROUND((oi.quantity * oi.price), 2) AS total_price  -- Round to 2 decimal places
             FROM 
                 User u
             JOIN 
@@ -37,6 +38,7 @@ exports.getCustomerOrderReport = () => {
     });
 };
 
+
 // Most Interest Model
 exports.getTopMonthsForProductSales = (product_id) => {
     return new Promise((resolve, reject) => {
@@ -53,8 +55,8 @@ exports.getTopMonthsForProductSales = (product_id) => {
             GROUP BY 
                 month
             ORDER BY 
-                total_sold DESC
-            LIMIT 2;
+                total_sold DESC;
+            
         `;
 
         db.query(query, [product_id], (err, result) => {
@@ -86,8 +88,8 @@ exports.getCategoryWithMostOrders = () => {
             GROUP BY 
                 c.category_id
             ORDER BY 
-                total_orders DESC
-            LIMIT 1;
+                total_orders DESC;
+            
         `;
 
         db.query(query, [], (err, result) => {
@@ -100,16 +102,17 @@ exports.getCategoryWithMostOrders = () => {
 };
 
 // Most Selling Product Model
+
 exports.getProductsBySales = (start_date, end_date) => {
     return new Promise((resolve, reject) => {
         const query = `
-            SELECT p.title, v.name, SUM(o.quantity) AS total_sales
+            SELECT p.title,  SUM(o.quantity) AS total_sales
             FROM OrderItem o
             JOIN Variant v ON v.variant_id = o.variant_id
             JOIN Product p ON v.product_id = p.product_id
             JOIN \`Order\` t ON t.order_id = o.order_id
             WHERE t.purchased_time BETWEEN ? AND ?
-            GROUP BY p.title, v.name
+            GROUP BY p.title
             ORDER BY total_sales DESC
         `;
 
@@ -122,6 +125,7 @@ exports.getProductsBySales = (start_date, end_date) => {
     });
 };
 
+
 // Quarterly Sales Report Model
 exports.getQuarterlySalesReport = (year) => {
     return new Promise((resolve, reject) => {
@@ -132,7 +136,12 @@ exports.getQuarterlySalesReport = (year) => {
                 return reject(err);
             }
             // Assuming the result is in the first element of the array
-            resolve(result[0]);
+            const salesReport = result[0].map(row => ({
+                quarter: row.quarter,
+                total_sales: parseFloat(row.total_sales).toFixed(2)  // Round to 2 decimal places
+            }));
+            resolve(salesReport);
         });
     });
 };
+
