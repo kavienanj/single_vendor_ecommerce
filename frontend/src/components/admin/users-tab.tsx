@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -8,23 +8,34 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { apiClient } from '@/services/axiosClient'
 
-const userData = [
-  { id: 1, name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin', lastLogin: '2023-05-15' },
-  { id: 2, name: 'Bob Smith', email: 'bob@example.com', role: 'User', lastLogin: '2023-05-14' },
-  { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', role: 'User', lastLogin: '2023-05-13' },
-  { id: 4, name: 'Diana Ross', email: 'diana@example.com', role: 'Manager', lastLogin: '2023-05-12' },
-  { id: 5, name: 'Edward Norton', email: 'edward@example.com', role: 'User', lastLogin: '2023-05-11' },
-]
+interface User {
+  user_id: number
+  first_name: string
+  last_name: string
+  email: string
+  phone_number: string;
+}
 
 export function UsersTab() {
   const [searchTerm, setSearchTerm] = useState('')
+  const [userData, setUserData] = useState<User[]>([])
 
   const filteredUsers = userData.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+    user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const fetchUsers = async () => {
+		const users = await apiClient.get('/users').then(res => res.data);
+    setUserData(users);
+	};
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -39,20 +50,20 @@ export function UsersTab() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[100px]">ID</TableHead>
-              <TableHead>Name</TableHead>
+              <TableHead>First Name</TableHead>
+              <TableHead>Last Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Last Login</TableHead>
+              <TableHead>Phone Number</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.id}</TableCell>
-                <TableCell>{user.name}</TableCell>
+              <TableRow key={user.user_id}>
+                <TableCell className="font-medium">{user.user_id}</TableCell>
+                <TableCell>{user.first_name}</TableCell>
+                <TableCell>{user.last_name}</TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>{user.role}</TableCell>
-                <TableCell>{user.lastLogin}</TableCell>
+                <TableCell>{user?.phone_number}</TableCell>
               </TableRow>
             ))}
           </TableBody>

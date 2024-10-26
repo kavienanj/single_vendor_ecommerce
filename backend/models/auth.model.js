@@ -31,3 +31,17 @@ exports.createUser = ({ first_name, last_name, email, password_hash, phone_numbe
         });
     });
 };
+
+// Function to get all users
+exports.getUsers = () => {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM User Where role_id = 2';
+        
+        db.query(query, (err, results) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(results);
+        });
+    });
+}

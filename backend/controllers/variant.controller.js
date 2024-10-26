@@ -49,6 +49,9 @@ exports.updateVariant = async (req, res) => {
 
 // Update a variant stock
 exports.updateStock = async (req, res) => {
+    if (req.user === undefined || req.user.role_id !== 1) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
     const { id } = req.params;
     const { quantity } = req.body;
     try {
