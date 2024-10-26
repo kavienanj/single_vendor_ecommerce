@@ -125,9 +125,8 @@ export function ReportsTab() {
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Purchased Time</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Order Status</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">No. Items</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total Price</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -138,7 +137,6 @@ export function ReportsTab() {
                   <td className="px-4 py-2">{item.order_id}</td>
                   <td className="px-4 py-2">{item.purchased_time}</td>
                   <td className="px-4 py-2">{item.order_status}</td>
-                  <td className="px-4 py-2">{item.total_amount}</td>
                   <td className="px-4 py-2">{item.number_of_items}</td>
                   <td className="px-4 py-2">{item.total_price}</td>
                 </tr>
