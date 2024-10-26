@@ -22,7 +22,11 @@ exports.createVariant = ({ productId, name, price, imageUrl }) => {
 
 // Get all variants
 exports.getAllVariants = () => {
-    const query = `SELECT * FROM Variant`;
+    const query = `
+    SELECT v.product_id, v.variant_id, v.name, v.price, v.image_url, i.quantity_available
+    FROM Variant v
+    LEFT JOIN Inventory i ON v.variant_id = i.variant_id
+    ORDER BY v.product_id, v.variant_id`;
     return runQuery(query);
 };
 
@@ -39,6 +43,16 @@ exports.updateVariant = ({ variantId, name, price, imageUrl }) => {
         SET name = ?, price = ?, image_url = ?, updated_at = NOW() 
         WHERE variant_id = ?`;
     return runQuery(query, [name, price, imageUrl, variantId]);
+};
+
+// Update a variant stock
+exports.updateStock = (variantId, quantity) => {
+    const query = `
+        UPDATE Inventory
+        SET quantity_available = ?
+        WHERE variant_id = ?
+    `;
+    return runQuery(query, [quantity, variantId]);
 };
 
 // Delete a variant

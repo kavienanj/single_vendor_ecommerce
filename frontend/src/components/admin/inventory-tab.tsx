@@ -16,16 +16,40 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { useEffect, useState } from 'react';
+import { apiClient } from '@/services/axiosClient';
 
-const inventoryData = [
-  { id: 1, name: 'Widget A', stock: 100, price: 9.99 },
-  { id: 2, name: 'Gadget B', stock: 50, price: 24.99 },
-  { id: 3, name: 'Doohickey C', stock: 75, price: 14.99 },
-  { id: 4, name: 'Thingamajig D', stock: 30, price: 39.99 },
-  { id: 5, name: 'Whatchamacallit E', stock: 60, price: 19.99 },
-]
+interface Variant {
+  product_id: number;
+  variant_id: number;
+  name: string;
+  price: number;
+  image_url: string;
+  quantity_available: number;
+}
 
 export function InventoryTab() {
+	const [products, setProducts] = useState<Variant[]>([]);
+
+	const fetchProducts = async () => {
+		const fetchedProducts = await apiClient.get('/variant/').then(res => res.data);
+		setProducts(fetchedProducts);
+	};
+
+  const updateVarientStock = async (variantId: number, quantity: number) => {
+    await apiClient.post(`/variant/${variantId}/stock`, {
+      quantity
+    });
+    setProducts(products.map(product => product.variant_id === variantId 
+      ? { ...product, quantity_available: quantity }
+      : product));
+  }
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -39,20 +63,27 @@ export function InventoryTab() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px]">ID</TableHead>
+              <TableHead className="w-[100px]">Varient ID</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead>Stock</TableHead>
               <TableHead>Price</TableHead>
+              <TableHead>Stock</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {inventoryData.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.id}</TableCell>
+            {products.map((item) => (
+              <TableRow key={item.variant_id}>
+                <TableCell className="font-medium">{item.variant_id}</TableCell>
                 <TableCell>{item.name}</TableCell>
-                <TableCell>{item.stock}</TableCell>
                 <TableCell>${item.price.toFixed(2)}</TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={item.quantity_available}
+                    onChange={(e) => updateVarientStock(item.variant_id, parseInt(e.target.value))}
+                    className="w-16 p-1 text-right"
+                  />
+                </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
