@@ -41,6 +41,7 @@ Before you begin, ensure you have the following installed:
    DB_USER=root
    DB_PASSWORD=your_password
    DB_NAME=YourDatabaseName
+   JWT_SECRET=your_secret_key
    ```
 
    Replace `your_password` with your actual MySQL password and `YourDatabaseName` with the name of your database.
