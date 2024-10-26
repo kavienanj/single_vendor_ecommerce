@@ -1,6 +1,9 @@
 const reportsModel = require('../models/reports.model');
 
 exports.getCustomerOrderReport = async (req, res) => {
+    if (req.user === undefined || req.user.role_id !== 1) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
     try {
         const reportData = await reportsModel.getCustomerOrderReport();
         res.status(200).json({
@@ -14,6 +17,9 @@ exports.getCustomerOrderReport = async (req, res) => {
 };
 
 exports.getTopMonthsForProductSales = async (req, res) => {
+    if (req.user === undefined || req.user.role_id !== 1) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
     const { product_id } = req.query;
 
     if (!product_id) {
@@ -25,7 +31,7 @@ exports.getTopMonthsForProductSales = async (req, res) => {
         const topMonths = reportData.length > 0 ? reportData : null;
 
         if (!topMonths) {
-            return res.status(404).json({ message: 'No sales data found for the given product' });
+            return res.status(200).json({ message: 'No sales data found for the given product' });
         }
 
         res.status(200).json({
@@ -40,6 +46,9 @@ exports.getTopMonthsForProductSales = async (req, res) => {
 
 
 exports.getCategoryWithMostOrders = async (req, res) => {
+    if (req.user === undefined || req.user.role_id !== 1) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
     try {
         const reportData = await reportsModel.getCategoryWithMostOrders();
         
@@ -47,7 +56,7 @@ exports.getCategoryWithMostOrders = async (req, res) => {
         const topCategories = reportData.slice(0, 10);  
         
         if (topCategories.length === 0) {
-            return res.status(404).json({ message: 'No categories found with orders' });
+            return res.status(200).json({ message: 'No categories found with orders' });
         }
 
         res.status(200).json({
@@ -63,6 +72,9 @@ exports.getCategoryWithMostOrders = async (req, res) => {
 
 
 exports.getProductsBySales = async (req, res) => {
+    if (req.user === undefined || req.user.role_id !== 1) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
     const { start_date, end_date } = req.query;
 
     // Check for required query parameters
@@ -76,7 +88,7 @@ exports.getProductsBySales = async (req, res) => {
         
         // Check if any products were returned
         if (reportData.length === 0) {
-            return res.status(404).json({ message: 'No products found for the given period' });
+            return res.status(200).json({ message: 'No products found for the given period' });
         }
 
         // Slice the array to get the top 10 products
@@ -94,6 +106,9 @@ exports.getProductsBySales = async (req, res) => {
 
 
 exports.getQuarterlySalesReport = async (req, res) => {
+    if (req.user === undefined || req.user.role_id !== 1) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
     console.log(req.query);  // Log the query object to debug
     
     const year = req.query.year;  // Extract the year from the query parameter
