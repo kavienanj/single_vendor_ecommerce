@@ -30,11 +30,37 @@ exports.getAllDeliveryLocations = () => {
 }
 
 // Function to update a delivery location
-exports.updateDeliveryLocation = ({ id, location_name, location_type, with_stock_delivery_days, without_stock_delivery_days }) => {
+exports.updateDeliveryLocation = ({ id, with_stock_delivery_days, without_stock_delivery_days }) => {
     return new Promise((resolve, reject) => {
-        const query = `UPDATE DeliveryLocation SET location_name = ?, location_type = ?, with_stock_delivery_days = ?, without_stock_delivery_days = ? WHERE delivery_location_id = ?`;
+        let fields = [];
+        let values = [];
 
-        db.query(query, [location_name, location_type, with_stock_delivery_days, without_stock_delivery_days, id], (err, result) => {
+        if (with_stock_delivery_days !== undefined) {
+            fields.push('with_stock_delivery_days = ?');
+            values.push(with_stock_delivery_days);
+        }
+
+        if (without_stock_delivery_days !== undefined) {
+            fields.push('without_stock_delivery_days = ?');
+            values.push(without_stock_delivery_days);
+        }
+
+        if (fields.length === 0) {
+            return reject(new Error('No fields to update'));
+        }
+
+        values.push(id);
+
+        const query = `
+            UPDATE 
+                DeliveryLocation 
+            SET 
+                ${fields.join(', ')}
+            WHERE 
+                delivery_location_id = ?
+        `;
+
+        db.query(query, values, (err, result) => {
             if (err) {
                 return reject(err);
             }
