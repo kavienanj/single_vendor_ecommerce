@@ -13,10 +13,10 @@ exports.getCustomerOrderReport = () => {
                 o.purchased_time,
                 o.order_status,
                 o.total_amount,
-                v.name AS variant_name,
-                oi.quantity,
-                oi.price AS item_price,
-                ROUND((oi.quantity * oi.price), 2) AS total_price  -- Round to 2 decimal places
+                COUNT(oi.order_item_id) AS number_of_items,  -- Count the number of items
+                GROUP_CONCAT(v.name) AS variant_names,
+                SUM(oi.quantity) AS total_quantity,
+                ROUND(SUM(oi.quantity * oi.price), 2) AS total_price  -- Round to 2 decimal places
             FROM 
                 User u
             JOIN 
@@ -25,6 +25,8 @@ exports.getCustomerOrderReport = () => {
                 OrderItem oi ON o.order_id = oi.order_id
             JOIN 
                 Variant v ON oi.variant_id = v.variant_id
+            GROUP BY 
+                u.user_id, o.order_id
             ORDER BY 
                 o.purchased_time DESC;
         `;
