@@ -900,10 +900,12 @@ VALUES
 
 INSERT INTO `DeliveryLocation` (`location_name`, `location_type`, `with_stock_delivery_days`, `without_stock_delivery_days`)
 VALUES
-('New York', 'city', 2, 7),
-('Los Angeles', 'city', 3, 8),
-('Store #1', 'store', 1, NULL),
-('Store #2', 'store', 1, NULL);
+('Texas', 'store', 1, 3),
+('New York', 'store', 3, 5),
+('Texas', 'city', 5, 8), -- Main city in Texas
+('New York', 'city', 7, 10),
+('Los Angeles', 'city', 7, 10),
+('California', 'city', 7, 10);
 
 -- Insert roles
 INSERT INTO `Role` (`role_name`, `description`) 
