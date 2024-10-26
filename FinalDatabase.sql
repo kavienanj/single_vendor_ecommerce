@@ -220,8 +220,7 @@ CREATE TABLE `Order` (
   `delivery_location_id` INT,
   `payment_method` ENUM('cash_on_delivery', 'card'),
   `total_amount` FLOAT,
-
-  `order_status` ENUM('Pending','Processing','Failed' 'Shipped', 'Completed', 'Failed'),
+  `order_status` ENUM('Pending','Processing','Delivered' ,'Shipped', 'Completed', 'Failed'),
   `purchased_time` DATETIME,
   `delivery_estimate` INT,
   `created_at` DATETIME DEFAULT current_timestamp,
@@ -796,26 +795,6 @@ DELIMITER ;
 
 
 
-delimiter $$
-drop event if exists `30minutes_delete_pending_orders`;
-create event `30minutes_delete_pending_orders` 
-on schedule
-	every 30 minute
-do BEGIN
-    start transaction;
-    -- Update inventory for the deleted orders
-    UPDATE Inventory i
-    JOIN OrderItem oi ON i.variant_id = oi.variant_id
-    JOIN `Order` o ON oi.order_id = o.order_id
-    SET i.quantity_available = i.quantity_available + oi.quantity
-    WHERE o.order_status = 'Pending' AND o.updated_at + INTERVAL 30 MINUTE <= CURRENT_TIMESTAMP();
-    -- Delete orders that are pending and older than 30 minutes
-    DELETE FROM `Order`
-    WHERE order_status = 'Pending' AND updated_at + INTERVAL 30 MINUTE <= CURRENT_TIMESTAMP();
-    commit;
-END$$
--- need an index cuz this a background process 
-delimiter ;
 
 CREATE INDEX idx_order_status_updated_at ON `Order` (order_status, updated_at);
 CREATE INDEX idx_order_item_order_id ON OrderItem (order_id);
@@ -1111,3 +1090,26 @@ VALUES
 UPDATE `Variant` 
 SET interested = interested + 5
 WHERE `variant_id` = 1;  -- 5 people are interested in Samsung Galaxy S2
+
+-- run below part after execution of others 
+
+delimiter $$
+drop event if exists `30minutes_delete_pending_orders`;
+create event `30minutes_delete_pending_orders` 
+on schedule
+	every 30 minute
+do BEGIN
+    start transaction;
+    -- Update inventory for the deleted orders
+    UPDATE Inventory i
+    JOIN OrderItem oi ON i.variant_id = oi.variant_id
+    JOIN `Order` o ON oi.order_id = o.order_id
+    SET i.quantity_available = i.quantity_available + oi.quantity
+    WHERE o.order_status = 'Pending' AND o.updated_at + INTERVAL 30 MINUTE <= CURRENT_TIMESTAMP();
+    -- Delete orders that are pending and older than 30 minutes
+    DELETE FROM `Order`
+    WHERE order_status = 'Pending' AND updated_at + INTERVAL 30 MINUTE <= CURRENT_TIMESTAMP();
+    commit;
+END$$
+-- need an index cuz this a background process 
+delimiter ;
