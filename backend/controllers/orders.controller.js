@@ -113,11 +113,16 @@ exports.deleteOrder = async (req, res) => {
 
 // Controller function to get orders by user ID
 exports.getUserOrders = async (req, res) => {
-    const { userId } = req.params;
-
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const userId = parseInt(req.user.id);
     try {
         const response = await model.getUserOrders(userId);
-        res.json(response);
+        res.json({
+            message: 'User orders fetched successfully!',
+            orders: response,
+        });
     } catch (err) {
         console.error('Error fetching user orders:', err);
         res.status(500).json({ message: 'Error fetching user orders', error: err.message });

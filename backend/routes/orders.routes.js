@@ -21,6 +21,6 @@ router.post('/orders/:orderId/process', orderController.processOrder);
 router.delete('/orders/:orderId', orderController.deleteOrder);
 
 // Route to get orders by its user-ID
-router.get('/orders/users/:userId', orderController.getUserOrders);
+router.get('/my-orders', orderController.getUserOrders);
 
 module.exports = router;

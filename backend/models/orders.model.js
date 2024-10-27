@@ -124,10 +124,10 @@ exports.getUserOrders = (userId) => {
 FROM \`Order\` o
 JOIN OrderItem oi ON o.order_id = oi.order_id
 JOIN Variant v ON oi.variant_id = v.variant_id
-JOIN Inventory in ON v.variant_id = inv.variant_id 
+JOIN Inventory inv ON v.variant_id = inv.variant_id 
 WHERE o.customer_id = ?
 GROUP BY o.order_id
-ORDER BY o.order_id;
+ORDER BY o.purchased_time DESC;
 `;
     return runQuery(query, [userId]);
 };

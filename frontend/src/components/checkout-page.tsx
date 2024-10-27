@@ -18,32 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import Link from "next/link"
-
-interface Order {
-  order_id: number;
-  customer_id: number;
-  customer_name: string;
-  contact_email: string | null;
-  contact_phone: string | null;
-  delivery_address: string | null;
-  delivery_method: string;
-  delivery_location_id: number | null;
-  payment_method: string | null;
-  total_amount: number;
-  order_status: string;
-  purchased_time: string;
-  delivery_estimate: string | null;
-  created_at: string;
-  updated_at: string;
-  items: {
-    variant_id: number;
-    price: number;
-    quantity: number;
-    total_price: number;
-    variant_name: string;
-    quantity_available: number;
-  }[]
-}
+import { Order } from "@/contexts/EcommerceContext"
 
 interface DeliveryLocation {
   delivery_location_id: number;
@@ -159,9 +134,9 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
           <p>Delivery Estimate: {order.delivery_estimate}</p>
           <p>Order Status: {order.order_status}</p>
         </div>
-        <Link href="/" className="mt-4">
+        <Link href="/my-orders" className="mt-4">
           <Button>
-            Continue Shopping
+            See All Orders
           </Button>
         </Link>
       </div>

@@ -125,7 +125,9 @@ export default function Header() {
                   </DropdownMenuItem>
                 </Link>
               )}
-              <DropdownMenuItem>My Orders</DropdownMenuItem>
+              <Link href="/my-orders">
+                <DropdownMenuItem>My Orders</DropdownMenuItem>
+              </Link>
               {isCustomer() && (
                 <DropdownMenuItem onClick={logout}>
                   Logout
