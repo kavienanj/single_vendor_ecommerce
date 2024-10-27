@@ -128,3 +128,4 @@ exports.getQuarterlySalesReport = async (req, res) => {
         res.status(500).json({ message: 'Error fetching quarterly sales report', error: err.message });
     }
 };
+
