@@ -71,6 +71,28 @@ exports.updateOrder = async (req, res) => {
     }
 };
 
+// Controller function to process an order
+exports.processOrder = async (req, res) => {
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const userId = parseInt(req.user.id);
+    const { orderId } = req.params;
+    const { name, phone, email, address, deliveryMethod, deliveryLocationId, paymentMethod } = req.body;
+    try {
+        await model.processOrder({ orderId, userId, name, phone, email, address, deliveryMethod, deliveryLocationId, paymentMethod });
+        res.status(200).json({
+            message: 'Order processed successfully!',
+        });
+    } catch (err) {
+        console.error('Error processing order:', err);
+        res.status(500).json({
+            message: 'Error processing order',
+            error: err.message
+        });
+    }
+};
+
 // Controller function to delete an order
 exports.deleteOrder = async (req, res) => {
     const { orderId } = req.params;

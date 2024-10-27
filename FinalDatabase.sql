@@ -223,7 +223,7 @@ CREATE TABLE `Order` (
   `delivery_address` VARCHAR(255),
   `payment_method` ENUM('cash_on_delivery', 'card'),
   `total_amount` FLOAT,
-  `order_status` ENUM('Processing', 'Shipped', 'Completed', 'Failed'),
+  `order_status` ENUM('Processing', 'Confirmed', 'Shipped', 'Completed', 'Failed'),
   `purchased_time` DATETIME,
   `delivery_estimate` INT,
   `created_at` DATETIME,
@@ -233,7 +233,6 @@ CREATE TABLE `Order` (
  
   FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`)
 );
-
 
 
 CREATE TABLE `OrderItem` (
@@ -247,6 +246,8 @@ CREATE TABLE `OrderItem` (
   FOREIGN KEY (`order_id`) REFERENCES `Order`(`order_id`),
   FOREIGN KEY (`variant_id`) REFERENCES `Variant`(`variant_id`)
 );
+
+
 
 DELIMITER $$
 
@@ -297,6 +298,7 @@ BEGIN
     ORDER BY p.title;
 END$$
 
+
 CREATE PROCEDURE move_cart_to_order(IN p_user_id INT, OUT p_order_id INT)
 BEGIN
     DECLARE v_total_amount FLOAT DEFAULT 0;
@@ -344,6 +346,7 @@ BEGIN
     DELETE FROM Cart WHERE user_id = p_user_id;
 END$$
 
+
 CREATE TRIGGER update_inventory_and_calculate_total
 AFTER INSERT ON OrderItem
 FOR EACH ROW
@@ -365,6 +368,96 @@ BEGIN
     SET total_amount = v_total_amount
     WHERE order_id = NEW.order_id;
 END$$
+
+
+CREATE PROCEDURE complete_checkout(
+    IN orderId INT,
+    IN userId INT,
+    IN name VARCHAR(255),
+    IN phone VARCHAR(255),
+    IN email VARCHAR(255),
+    IN address VARCHAR(255),
+    IN deliveryMethod ENUM('store_pickup', 'delivery'),
+    IN deliveryLocationId INT,
+    IN paymentMethod ENUM('cash_on_delivery', 'card')
+)
+BEGIN
+    -- Declare variables at the beginning of the procedure
+    DECLARE v_total_amount FLOAT DEFAULT 0;
+    DECLARE v_delivery_estimate INT;
+    DECLARE v_with_stock_delivery_days INT;
+    DECLARE v_without_stock_delivery_days INT;
+    DECLARE v_item_quantity INT;
+    DECLARE v_inventory_quantity INT;
+    DECLARE done INT DEFAULT FALSE;
+
+    -- Declare cursor for order items
+    DECLARE order_item_cursor CURSOR FOR
+        SELECT quantity, variant_id
+        FROM OrderItem
+        WHERE order_id = orderId;
+
+    -- Declare continue handler for cursor
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    -- Check if the user is the owner of the order
+    IF NOT EXISTS (
+        SELECT 1
+        FROM `Order`
+        WHERE order_id = orderId AND customer_id = userId
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User does not have permission to complete this order';
+    END IF;
+
+    -- Step 1: Retrieve the delivery location details
+    SELECT with_stock_delivery_days, without_stock_delivery_days
+    INTO v_with_stock_delivery_days, v_without_stock_delivery_days
+    FROM DeliveryLocation
+    WHERE delivery_location_id = deliveryLocationId;
+
+    -- Initialize the delivery estimate
+    SET v_delivery_estimate = v_with_stock_delivery_days;
+
+    -- Open the cursor
+    OPEN order_item_cursor;
+
+    -- Loop through order items
+    read_loop: LOOP
+        FETCH order_item_cursor INTO v_item_quantity, v_inventory_quantity;
+        
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+
+        -- Step 2: Check if item quantity exceeds inventory stock
+        SELECT quantity_available INTO v_inventory_quantity
+        FROM Inventory
+        WHERE variant_id = v_item_quantity;
+
+        IF v_item_quantity > v_inventory_quantity THEN
+            SET v_delivery_estimate = v_without_stock_delivery_days;
+        END IF;
+    END LOOP;
+
+    -- Close the cursor
+    CLOSE order_item_cursor;
+
+    -- Step 3: Update the Order with provided details and estimated delivery time
+    UPDATE `Order`
+    SET contact_email = email,
+        contact_phone = phone,
+        delivery_address = address,
+        customer_name = name,
+        delivery_method = deliveryMethod,
+        delivery_location_id = deliveryLocationId,
+        payment_method = paymentMethod,
+        delivery_estimate = v_delivery_estimate,
+        order_status = 'Confirmed',  -- Updated status to 'Confirmed'
+        updated_at = NOW()
+    WHERE order_id = orderId;
+END$$
+
 
 CREATE PROCEDURE ADD_WAREHOUSE (location VARCHAR(255) , capacity INT)
 BEGIN

@@ -78,6 +78,12 @@ exports.updateOrder = ({ orderId, orderStatus, deliveryEstimate, updatedAt = new
     return runQuery(query, [orderStatus, deliveryEstimate, updatedAt, orderId]);
 };
 
+// Function to process an order
+exports.processOrder = ({ orderId, userId, name, phone, email, address, deliveryMethod, deliveryLocationId, paymentMethod }) => {
+    const query = "CALL complete_checkout(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    return runQuery(query, [orderId, userId, name, phone, email, address, deliveryMethod, deliveryLocationId, paymentMethod]);
+};
+
 // Function to delete an order
 // this should allowed only for pending orders
 // OTHERWISE NOT!!!

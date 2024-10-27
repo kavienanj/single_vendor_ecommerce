@@ -72,7 +72,13 @@ export function InventoryTab() {
           </TableHeader>
           <TableBody>
             {products.map((item) => (
-              <TableRow key={item.variant_id}>
+              <TableRow key={item.variant_id} className={`${
+                  item.quantity_available < 10 ? 
+                    item.quantity_available < 1 ? 
+                      'bg-red-200 hover:bg-red-200' 
+                      : 'bg-yellow-200 hover:bg-yellow-200'
+                    : ''
+                  }`}>
                 <TableCell className="font-medium">{item.variant_id}</TableCell>
                 <TableCell>{item.name}</TableCell>
                 <TableCell>${item.price.toFixed(2)}</TableCell>

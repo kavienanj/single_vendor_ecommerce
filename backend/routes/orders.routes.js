@@ -14,6 +14,9 @@ router.get('/orders', orderController.getAllOrders);
 // Route to update an order by its ID
 router.put('/orders/:orderId', orderController.updateOrder);
 
+// Route to update an order by its ID
+router.post('/orders/:orderId/process', orderController.processOrder);
+
 // Route to delete an order by its ID
 router.delete('/orders/:orderId', orderController.deleteOrder);
 

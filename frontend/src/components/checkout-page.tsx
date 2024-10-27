@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import Link from "next/link"
 
 interface Order {
   order_id: number;
@@ -57,6 +58,7 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
   const [deliveryLocations, setDeliveryLocations] = useState<DeliveryLocation[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
@@ -64,7 +66,7 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
     email: "",
     address: "",
     deliveryMethod: "delivery",
-    deliveryLocation: "",
+    deliveryLocationId: "",
     paymentMethod: "cash",
     cardNumber: "",
     cardExpiry: "",
@@ -111,6 +113,25 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
+  const submitOrder = async () => {
+    setSubmitting(true);
+    try {
+      const response = await apiClient.post(`/orders/${checkoutId}/process`, {
+        ...formData,
+        deliveryLocationId: parseInt(formData.deliveryLocationId),
+        paymentMethod: formData.paymentMethod === "card" ? "card" : "cash_on_delivery",
+      });
+      await fetchOrder();
+      console.log(response.data);
+      alert("Order placed successfully!");
+      setSubmitting(false);
+    } catch (error) {
+      console.error("An error occurred while placing the order", error);
+      alert("An error occurred while placing the order");
+      setSubmitting(false);
+    }
+  }
+
   useEffect(() => {
     if (user) {
       fetchOrder();
@@ -126,6 +147,26 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
     return <div className="flex items-center justify-center h-screen">{error}</div>;
   }
 
+  if (order?.order_status === "Confirmed") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold mb-4">Order Placed</h1>
+          <p>Your order has been placed successfully!</p>
+          <p>Order ID: {order.order_id}</p>
+          <p>Total Amount: ${order.total_amount.toFixed(2)}</p>
+          <p>Delivery Estimate: {order.delivery_estimate}</p>
+          <p>Order Status: {order.order_status}</p>
+        </div>
+        <Link href="/" className="mt-4">
+          <Button>
+            Continue Shopping
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
   const calculateDeliveryEstimate = () => {
     if (formData.deliveryMethod === "") {
       return "Select a delivery method";
@@ -134,7 +175,7 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
       return "Pickup today";
     }
     const location = deliveryLocations.find(
-      (location) => location.delivery_location_id === parseInt(formData.deliveryLocation),
+      (location) => location.delivery_location_id === parseInt(formData.deliveryLocationId),
     );
     if (!location) {
       return "(No location selected)";
@@ -150,6 +191,20 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
       return `Deliver in ${location!.with_stock_delivery_days} days`;
     }
     return `Deliver in ${location!.without_stock_delivery_days} days`;
+  }
+
+  function canPlaceOrder() {
+    if (!(formData.name && formData.phone && formData.email && formData.address)) {
+      return false;
+    }
+    if (formData.deliveryLocationId === "") {
+      return false;
+    }
+    console.log(formData.paymentMethod);
+    if (formData.paymentMethod === "card") {
+      return formData.cardNumber !== "" && formData.cardExpiry !== "" && formData.cardCVC !== "";
+    }
+    return true;
   }
 
   const renderCheckoutSummary = () => (
@@ -224,7 +279,7 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
                   <RadioGroup
                     onValueChange={(value) => {
                       handleRadioChange("deliveryMethod", value)
-                      handleRadioChange("deliveryLocation", "")
+                      handleRadioChange("deliveryLocationId", "")
                     }}
                     value={formData.deliveryMethod}
                   >
@@ -246,8 +301,8 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
                   <div className="mt-4">
                     {formData.deliveryMethod === "delivery" && (
                       <Select
-                        defaultValue={formData.deliveryLocation.toString()}
-                        onValueChange={(value) => handleRadioChange("deliveryLocation", value)}
+                        defaultValue={formData.deliveryLocationId.toString()}
+                        onValueChange={(value) => handleRadioChange("deliveryLocationId", value)}
                       >
                         <SelectTrigger id="delivery-location">
                           <SelectValue placeholder="Select Delivery Location" />
@@ -263,8 +318,8 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
                     )}
                     {formData.deliveryMethod === "store_pickup" && (
                       <Select
-                        defaultValue={formData.deliveryLocation.toString()}
-                        onValueChange={(value) => handleRadioChange("deliveryLocation", value)}
+                        defaultValue={formData.deliveryLocationId.toString()}
+                        onValueChange={(value) => handleRadioChange("deliveryLocationId", value)}
                       >
                         <SelectTrigger id="store-location">
                           <SelectValue placeholder="Select Store Location" />
@@ -341,9 +396,16 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
         </div>
         <div className="md:w-1/3 space-y-8">
           {renderCheckoutSummary()}
-          <Button onClick={() => alert("Order placed successfully!")} className="w-full">
-            Place Order
+          <Button 
+            onClick={submitOrder}
+            className="w-full"
+            disabled={!canPlaceOrder() || submitting}
+          >
+            {submitting ? "Placing Order..." : "Place Order"}
           </Button>
+          {!canPlaceOrder() && (
+            <p className="text-sm text-red-500">Please fill in all required fields</p>
+          )}
         </div>
       </div>
     </div>

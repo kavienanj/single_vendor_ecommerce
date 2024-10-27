@@ -31,7 +31,7 @@ export function DeliveriesTab() {
 
   async function fetchDeliveries() {
     const deliveries = await apiClient.get('/delivery-locations');
-    setDeliveryData(deliveries.data);
+    setDeliveryData(deliveries.data.deliveryLocations);
   }
 
   async function updateStockETA({
