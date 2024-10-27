@@ -1098,8 +1098,9 @@ WHERE `variant_id` = 1;  -- 5 people are interested in Samsung Galaxy S2
 DROP PROCEDURE IF EXISTS `Checkout`;
 DELIMITER $$
 
-CREATE PROCEDURE `Checkout` (IN userID INT, IN order_items JSON, OUT orderID INT)
+CREATE PROCEDURE `Checkout` (IN userID INT, IN order_items JSON)
 BEGIN
+    DECLARE orderID INT ;
     DECLARE i INT DEFAULT 0;
     DECLARE array_length INT;
     DECLARE variantID INT;
