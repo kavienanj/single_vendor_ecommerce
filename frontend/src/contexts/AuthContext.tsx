@@ -4,6 +4,7 @@ import React, { createContext, ReactNode, useContext, useEffect, useState } from
 import { jwtDecode } from 'jwt-decode';
 import { apiClient, setTokenToApiClientHeader } from '@/services/axiosClient';
 import { AxiosError } from 'axios';
+import { useRouter } from 'next/navigation';
 
 interface User {
   id: number;
@@ -34,6 +35,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -67,6 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('token');
     setUser(null);
     registerGuestUser().then(loadUserFromToken);
+    router.push('/');
   };
 
   const registerUser = async (payload: RegisterUserPayload) => {

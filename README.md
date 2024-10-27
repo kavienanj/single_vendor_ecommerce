@@ -40,17 +40,18 @@ Before you begin, ensure you have the following installed:
    DB_HOST=localhost
    DB_USER=root
    DB_PASSWORD=your_password
-   DB_NAME=YourDatabaseName
+   DB_NAME=ECommerceDatabase
    JWT_SECRET=your_secret_key
    ```
 
-   Replace `your_password` with your actual MySQL password and `YourDatabaseName` with the name of your database.
+   Replace `your_password` with your actual MySQL password.
 
 5. **Run the SQL script**
 
    Run the following command to create the database and table:
 
    ```bash
+   cd ..
    mysql -u root -p < FinalDatabase.sql
    ```
    Enter your MySQL password when prompted.
@@ -64,13 +65,14 @@ Before you begin, ensure you have the following installed:
    npm run dev
    ```
 
-   The server will start on the port `3000` defined in the `server.js` file.
+   The server will start on the port `3000` defined in the `server.js` file. Make sure the port is `3000`. If not do not forget to change the port in the `API_HOSTNAME` variable in `frontend/src/services/axiosClient.ts` file.
 
 7. **Setup the frontend**
 
    The Next.js frontend is located in the `frontend` directory. To run the frontend, navigate to the `frontend` directory and run the following command:
 
    ```bash
+   cd frontend
    npm install
    npm run dev
    ```
