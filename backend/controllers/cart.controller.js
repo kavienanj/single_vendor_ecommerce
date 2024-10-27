@@ -70,8 +70,11 @@ exports.setQuantity = async (req, res) => {
 };
 
 exports.checkout = async (req, res) => {
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
     const userId = parseInt(req.user.id);
-    const order_items = req.body;
+    const {order_items} = req.body;
     try {
         await model.checkout({ userId , order_items });
         res.status(200).json({
@@ -84,6 +87,9 @@ exports.checkout = async (req, res) => {
 };
 
 exports.placeOrder = async (req, res) => {
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
     const userId = parseInt(req.user.id);
     const { 
         order_id, 

@@ -5,13 +5,29 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { useEcommerce } from "@/contexts/EcommerceContext"
+import { apiClient } from "@/services/axiosClient"
 
 export function CartPageComponent() {
   const { addToCart, removeFromCart, cart } = useEcommerce();
 
   const calculateTotal = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0)
-  }
+  };
+
+  const handleCheckout = async () => {
+    try {
+      const response = await apiClient.post('/cart/checkout', {
+        order_items: cart.map((item) => ({ variant_id: item.variant_id, quantity: item.quantity }))
+      });
+      if (response.status === 200) {
+        console.log('Checkout successful:', response.data);
+      } else {
+        console.error('Error during checkout:', response.data);
+      }
+    } catch (error) {
+      console.error('Error during checkout:', error);
+    }
+  };
 
   return (
     <main className="min-h-[50vh] container mx-auto px-4 py-8">
@@ -82,7 +98,7 @@ export function CartPageComponent() {
                   </div>
                 </div>
                 <Link href="/checkout/1">
-                  <Button className="w-full mt-6">Proceed to Checkout</Button>
+                  <Button className="w-full mt-6" onClick={handleCheckout}>Proceed to Checkout</Button>
                 </Link>
               </CardContent>
             </Card>
