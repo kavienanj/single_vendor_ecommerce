@@ -69,22 +69,82 @@ exports.setQuantity = async (req, res) => {
     }
 };
 
+
 exports.checkout = async (req, res) => {
     if (req.user === undefined) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
+
     const userId = parseInt(req.user.id);
-    const {order_items} = req.body;
+    const { order_items } = req.body;
+
     try {
-        await model.checkout({ userId , order_items });
+        const orderItemsJson = JSON.stringify(order_items);  // Convert order items to JSON
+        const orderID = await model.checkout({ userId, order_items: orderItemsJson });
+        if (!orderID) {
+            throw new Error('Order ID is null or undefined');
+        }
+
         res.status(200).json({
-            message: 'Checkout successful!'
+            message: 'Checkout successful!',
+            orderID: orderID
         });
     } catch (err) {
         console.error('Error checking out:', err);
         res.status(500).json({ message: 'Error checking out.', error: err.message });
     }
 };
+
+
+
+// exports.checkout = async (req, res) => {
+//     if (req.user === undefined) {
+//         return res.status(401).json({ message: 'Unauthorized' });
+//     }
+//     const userId = parseInt(req.user.id);
+//     const { order_items } = req.body;
+//     console.log(order_items);
+//     try {
+//         const orderItemsJson = JSON.stringify(order_items);
+//         const orderID = await model.checkout({ userId, order_items: orderItemsJson });
+//         if (orderID === null) {
+//             throw new Error('Order ID is null');
+//         }
+//         res.status(200).json({
+//             message: 'Checkout successful!',
+//             orderID: orderID
+//         });
+//     } catch (err) {
+//         console.error('Error checking out:', err);
+//         res.status(500).json({ message: 'Error checking out.', error: err.message });
+//     }
+// };
+
+
+
+
+// exports.checkout = async (req, res) => {
+//     if (req.user === undefined) {
+//         return res.status(401).json({ message: 'Unauthorized' });
+//     }
+//     const userId = parseInt(req.user.id);
+//     const {order_items} = req.body;
+//     console.log(order_items);
+//     try {
+//         const orderItemsJson = JSON.stringify(order_items);
+//         const orderID = await model.checkout({ userId, order_items: orderItemsJson });
+//         //console.log(orderID);
+    
+//         res.status(200).json({
+//             message: 'Checkout successful!',
+//             orderID: orderID
+//         });
+//         //console.log(res);
+//     } catch (err) {
+//         console.error('Error checking out:', err);
+//         res.status(500).json({ message: 'Error checking out.', error: err.message });
+//     }
+// };
 
 exports.placeOrder = async (req, res) => {
     if (req.user === undefined) {

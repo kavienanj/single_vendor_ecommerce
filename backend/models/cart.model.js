@@ -124,20 +124,76 @@ exports.setQuantity = ({ userId,variant_id,quantity }) => {
 // }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// exports.checkout = ({ userId, order_items }) => {
+//     return new Promise((resolve, reject) => {
+//         const combinedQuery = `
+//             SET @orderID = 0;
+//             CALL Checkout(${mysql.escape(userId)}, ${mysql.escape(order_items)}, @orderID);
+//             SELECT @orderID as orderID;
+//         `;
+
+//         db.query(combinedQuery, (err, results) => {
+//             if (err) {
+//                 return reject(err);
+//             }
+
+//             const orderID = results[2][0].orderID; // The result of the SELECT statement is in the third element
+//             resolve(orderID);
+//         });
+//     });
+// };
+
+// exports.checkout = ({ userId, order_items }) => {
+//     return new Promise((resolve, reject) => {
+//     const query1 = `
+//     declare @orderID int;
+//     SET @orderID = 0;
+//     call Checkout(?,?,@orderID);
+//     SELECT @orderID;`
+//     db.query(query1, [userId, order_items], (err, result) => {
+//         if (err) {
+//             return reject(err);
+//         }
+//         const orderID = results[2][0].orderID;
+//         console.log(orderID);
+//         resolve(result);
+//     }
+//     );
+// }
+// );
+// }
+
+
 exports.checkout = ({ userId, order_items }) => {
     return new Promise((resolve, reject) => {
-    const query1 = `call Checkout(?,?);` ;
-    db.query(query1, [userId, order_items], (err, result) => {
-        if (err) {
-            return reject(err);
-        }
-        resolve(result);
-    }
-    );
-}
-);
-}
+        const query = `
+            CALL Checkout(?, ?);
+        `;
 
+        // Execute the query
+        db.query(query, [userId, order_items], (err, results) => {
+            if (err) {
+                return reject(err);
+            }
+
+            // Check if the third result set contains the order ID
+            const query2 = `select order_id from \`order\` order by order_id desc limit 1;`;
+            db.query(query2, (err, results) => {
+                if (err) {
+                    return reject(err);
+                }
+
+                const orderID = results[0].order_id;
+                if (orderID === null) {
+                    return reject(new Error('Failed to retrieve order ID.'));
+            }
+
+            resolve(orderID);
+        });
+    });
+
+    });
+}
 exports.placeOrder = ({ userId, 
     order_id, 
     contact_email, 

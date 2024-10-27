@@ -216,19 +216,19 @@ CREATE TABLE `Order` (
   `customer_id` INT,
   `contact_email` VARCHAR(255),
   `contact_phone` VARCHAR(255),
-  `delivery_method` ENUM('store_pickup', 'delivery') NOT NULL,
+  `delivery_method` ENUM('store_pickup', 'delivery') NOT NULL default 'delivery',
   `delivery_location_id` INT,
-  `payment_method` ENUM('cash_on_delivery', 'card'),
+  `payment_method` ENUM('cash_on_delivery', 'card') default 'card' ,
   `total_amount` FLOAT,
 
-  `order_status` ENUM('Pending','Processing','Failed' 'Shipped', 'Completed', 'Failed'),
+  `order_status` ENUM('Pending','Processing','Failed' ,'Shipped', 'Completed') default 'Pending',
   `purchased_time` DATETIME,
   `delivery_estimate` INT,
   `created_at` DATETIME DEFAULT current_timestamp,
   `updated_at` DATETIME ,
-  PRIMARY KEY (`order_id`),
+  PRIMARY KEY (`order_id`), 
   FOREIGN KEY (`customer_id`) REFERENCES `User`(`user_id`),
- 
+
   FOREIGN KEY (`delivery_location_id`) REFERENCES `DeliveryLocation`(`delivery_location_id`)
 );
 
@@ -763,7 +763,10 @@ BEGIN
     SET array_length = JSON_LENGTH(order_items);
     WHILE i < array_length DO
     
-		SET variantID = JSON_UNQUOTE(JSON_EXTRACT(order_items, CONCAT('$[', counter, '].variant_id')));
+		SET variantID = JSON_UNQUOTE(JSON_EXTRACT(order_items, CONCAT('$[', i, '].variant_id')));
+        -- SET desiredQuantity = JSON_UNQUOTE(JSON_EXTRACT(order_items, CONCAT('$[', counter, '].quantity')));
+        -- set variantID = JSON_EXTRACT(order_items, '$.details.specs.cpu');
+        
         select quantity_available into availableQuantity from Inventory where variant_id = variantID;
         -- set desiredQuantity = 0;
         -- select quantity into desiredQuantity from cart where user_id = userID and variant_id = variantID;
@@ -796,26 +799,6 @@ DELIMITER ;
 
 
 
-delimiter $$
-drop event if exists `30minutes_delete_pending_orders`;
-create event `30minutes_delete_pending_orders` 
-on schedule
-	every 30 minute
-do BEGIN
-    start transaction;
-    -- Update inventory for the deleted orders
-    UPDATE Inventory i
-    JOIN OrderItem oi ON i.variant_id = oi.variant_id
-    JOIN `Order` o ON oi.order_id = o.order_id
-    SET i.quantity_available = i.quantity_available + oi.quantity
-    WHERE o.order_status = 'Pending' AND o.updated_at + INTERVAL 30 MINUTE <= CURRENT_TIMESTAMP();
-    -- Delete orders that are pending and older than 30 minutes
-    DELETE FROM `Order`
-    WHERE order_status = 'Pending' AND updated_at + INTERVAL 30 MINUTE <= CURRENT_TIMESTAMP();
-    commit;
-END$$
--- need an index cuz this a background process 
-delimiter ;
 
 CREATE INDEX idx_order_status_updated_at ON `Order` (order_status, updated_at);
 CREATE INDEX idx_order_item_order_id ON OrderItem (order_id);
@@ -1111,3 +1094,83 @@ VALUES
 UPDATE `Variant` 
 SET interested = interested + 5
 WHERE `variant_id` = 1;  -- 5 people are interested in Samsung Galaxy S2
+
+DROP PROCEDURE IF EXISTS `Checkout`;
+DELIMITER $$
+
+CREATE PROCEDURE `Checkout` (IN userID INT, IN order_items JSON, OUT orderID INT)
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    DECLARE array_length INT;
+    DECLARE variantID INT;
+    DECLARE availableQuantity INT;
+    DECLARE desiredQuantity INT;
+    
+    SET autocommit = 0;
+    START TRANSACTION;
+    
+    INSERT INTO `Order` (customer_id, created_at, order_status) VALUES (userID, NOW(), 'Pending');
+    SET orderID = LAST_INSERT_ID();
+    
+    SET array_length = JSON_LENGTH(order_items);
+    
+    WHILE_LOOP: WHILE i < array_length DO
+        SET variantID = JSON_EXTRACT(order_items, CONCAT('$[', i, '].variant_id'));
+        SET desiredQuantity = JSON_EXTRACT(order_items, CONCAT('$[', i, '].quantity'));
+        SELECT quantity_available INTO availableQuantity FROM Inventory WHERE variant_id = variantID;
+        
+        IF (
+            SELECT EXISTS(
+                SELECT 1 FROM cart
+                WHERE user_id = userID AND 
+                variant_id = variantID AND 
+                quantity <= availableQuantity
+            )
+        ) THEN
+            DELETE FROM cart 
+            WHERE user_id = userID AND variant_id = variantID;
+            
+            INSERT INTO orderitem (order_id, variant_id, quantity) 
+            VALUES (orderID, variantID, desiredQuantity);
+            
+            UPDATE Inventory 
+            SET quantity_available = quantity_available - desiredQuantity
+            WHERE variant_id = variantID;
+        ELSE
+            SELECT variantID, desiredQuantity AS desiredQuantity, 'item not in the cart | not enough stock | wrong variant_id';
+            ROLLBACK;
+            LEAVE WHILE_LOOP;
+        END IF;
+        
+        SET i = i + 1;
+    END WHILE WHILE_LOOP;
+    
+    COMMIT;
+    SET autocommit = 1;
+END $$
+
+DELIMITER ;
+
+
+
+-- run this part seperately
+delimiter $$
+drop event if exists `30minutes_delete_pending_orders`;
+create event `30minutes_delete_pending_orders` 
+on schedule
+	every 30 minute
+do BEGIN
+    start transaction;
+    -- Update inventory for the deleted orders
+    UPDATE Inventory i
+    JOIN OrderItem oi ON i.variant_id = oi.variant_id
+    JOIN `Order` o ON oi.order_id = o.order_id
+    SET i.quantity_available = i.quantity_available + oi.quantity
+    WHERE o.order_status = 'Pending' AND o.updated_at + INTERVAL 30 MINUTE <= CURRENT_TIMESTAMP();
+    -- Delete orders that are pending and older than 30 minutes
+    DELETE FROM `Order`
+    WHERE order_status = 'Pending' AND updated_at + INTERVAL 30 MINUTE <= CURRENT_TIMESTAMP();
+    commit;
+END$$
+-- need an index cuz this a background process 
+delimiter ;
