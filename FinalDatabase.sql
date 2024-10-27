@@ -247,6 +247,53 @@ CREATE TABLE `OrderItem` (
 
 DELIMITER $$
 
+CREATE PROCEDURE GetProductDetails(IN product_id INT)
+BEGIN
+    SELECT 
+        p.product_id AS product_id,
+        p.title AS product_name,
+        p.description AS product_description,
+        p.default_price AS price,
+        p.default_image AS image_url,
+        p.sku,
+        p.weight,
+        JSON_ARRAYAGG(c.category_name) AS categories,
+        (
+            SELECT JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'variant_id', dv.variant_id,
+                    'variant_name', dv.name,
+                    'price', dv.price,
+                    'image_url', dv.image_url,
+                    'quantity_available', dv.quantity_available,
+                    'attributes', (
+                        SELECT JSON_ARRAYAGG(
+                            JSON_OBJECT(
+                                'attribute_name', ca.attribute_name,
+                                'attribute_value', cav.attribute_value
+                            )
+                        )
+                        FROM Custom_Attribute ca
+                        JOIN Custom_Attribute_Value cav ON ca.attribute_id = cav.attribute_id
+                        WHERE cav.variant_id = dv.variant_id
+                    )
+                )
+            )
+            FROM (
+                SELECT DISTINCT v.*, i.quantity_available
+                FROM Variant v
+                LEFT JOIN Inventory i ON v.variant_id = i.variant_id 
+                WHERE v.product_id = p.product_id
+            ) AS dv
+        ) AS variants
+    FROM Product p
+    JOIN Product_Category_Match pcm ON p.product_id = pcm.product_id
+    JOIN Category c ON pcm.category_id = c.category_id
+    WHERE p.product_id = product_id
+    GROUP BY p.product_id
+    ORDER BY p.title;
+END$$
+
 CREATE PROCEDURE ADD_WAREHOUSE (location VARCHAR(255) , capacity INT)
 BEGIN
 INSERT INTO Warehouse VALUES (default,location,capacity);
@@ -778,20 +825,20 @@ VALUES
 INSERT INTO `Inventory` (`warehouse_id`, `variant_id`, `quantity_available`, `last_updated`) 
 VALUES 
 -- MacBook Air M2
-(1, 1, 100, NOW()),
-(1, 2, 75, NOW()),
+(1, 1, 3, NOW()),
+(1, 2, 15, NOW()),
 
 -- ThinkPad X1 Carbon
-(1, 3, 50, NOW()),
-(1, 4, 30, NOW()),
+(1, 3, 1, NOW()),
+(1, 4, 0, NOW()),
 
 -- HP Pavilion Desktop
-(2, 5, 20, NOW()),
-(2, 6, 15, NOW()),
+(2, 5, 3, NOW()),
+(2, 6, 6, NOW()),
 
 -- iPhone 14 Pro
-(1, 7, 150, NOW()),
-(1, 8, 100, NOW()),
+(1, 7, 10, NOW()),
+(1, 8, 20, NOW()),
 
 -- OnePlus 11
 (2, 9, 75, NOW()),

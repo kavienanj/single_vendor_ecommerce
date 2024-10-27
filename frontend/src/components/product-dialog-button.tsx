@@ -164,6 +164,19 @@ export function ProductDialogButton({ product }: { product: Product }) {
             </div>
           </div>
         </div>
+        {selectedVariant && (
+          <div className="flex items-center justify-between">
+            <span>Stock Available:</span>
+            <div className={`w-[100px] font-semibold flex items-center justify-center ${selectedVariant.quantity_available <= 10 ? "text-red-500" : ""}`}>
+              <span>
+                {selectedVariant.quantity_available === 0
+                  ? "Out of Stock"
+                  : selectedVariant.quantity_available
+                }
+              </span>
+            </div>
+          </div>
+        )}
         <div className="flex flex-col gap-2 w-full">
           {selectedVariant ? (
             <Button 

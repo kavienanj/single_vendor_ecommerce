@@ -24,6 +24,7 @@ export interface Variant {
 	variant_name: string;
 	image_url: string;
 	price: number;
+	quantity_available: number;
 	attributes: VariantAttribute[];
 }
 
