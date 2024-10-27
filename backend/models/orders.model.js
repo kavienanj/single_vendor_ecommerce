@@ -31,7 +31,40 @@ exports.getAllOrders = () => {
 
 // Function to get an order by ID
 exports.getOrderById = (orderId) => {
-    const query = "SELECT * FROM `Order` WHERE order_id = ?";
+    const query = `
+        SELECT 
+            o.order_id,
+            o.customer_id,
+            o.customer_name,
+            o.contact_email,
+            o.contact_phone,
+            o.delivery_address,
+            o.delivery_method,
+            o.delivery_location_id,
+            o.payment_method,
+            o.total_amount,
+            o.order_status,
+            o.purchased_time,
+            o.delivery_estimate,
+            o.created_at,
+            o.updated_at,
+            JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'variant_id', v.variant_id,
+                    'variant_name', v.name,
+                    'price', ROUND(oi.price, 2),
+                    'quantity', oi.quantity,
+                    'quantity_available', inv.quantity_available,
+                    'total_price', ROUND(oi.price * oi.quantity, 2)
+                )
+            ) AS items
+        FROM \`Order\` o
+        JOIN OrderItem oi ON o.order_id = oi.order_id
+        JOIN Variant v ON oi.variant_id = v.variant_id
+        JOIN Inventory inv ON v.variant_id = inv.variant_id 
+        WHERE o.order_id = ?
+        GROUP BY o.order_id;
+    `
     return runQuery(query, [orderId]);
 };
 
@@ -59,8 +92,10 @@ exports.getUserOrders = (userId) => {
     SELECT 
     o.order_id,
     o.customer_id,
+    o.customer_name,
     o.contact_email,
     o.contact_phone,
+    o.delivery_address,
     o.delivery_method,
     o.delivery_location_id,
     o.payment_method,
@@ -72,21 +107,21 @@ exports.getUserOrders = (userId) => {
     o.updated_at,
     JSON_ARRAYAGG(
         JSON_OBJECT(
-            'product_name', p.title,
+            'variant_id', v.variant_id,
             'variant_name', v.name,
-            'price', ROUND(v.price, 2),
+            'price', ROUND(oi.price, 2),
             'quantity', oi.quantity,
-            'total_price', ROUND(v.price * oi.quantity, 2)
+            'quantity_available', inv.quantity_available,
+            'total_price', ROUND(oi.price * oi.quantity, 2)
         )
     ) AS items
 FROM \`Order\` o
 JOIN OrderItem oi ON o.order_id = oi.order_id
 JOIN Variant v ON oi.variant_id = v.variant_id
-JOIN Product p ON v.product_id = p.product_id
+JOIN Inventory in ON v.variant_id = inv.variant_id 
 WHERE o.customer_id = ?
 GROUP BY o.order_id
 ORDER BY o.order_id;
-
 `;
     return runQuery(query, [userId]);
 };

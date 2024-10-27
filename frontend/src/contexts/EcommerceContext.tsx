@@ -51,6 +51,7 @@ interface EcommerceContextState {
 	addToCart: (variant: Variant, quantity: number) => void;
 	removeFromCart: (variantId: number) => void;
 	fetchProductWithVariants: (productId: number) => Promise<ProductWithVarients>;
+	callPostCheckout: () => void;
 }
 
 // Create the context with default values
@@ -101,6 +102,14 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 		return product;
 	}
 
+	const callPostCheckout = async () => {
+		setCart([]);
+		fetchProductsAndCategories();
+		fetchUserCart().then(cart => {
+			setCart(cart);
+		});
+	}
+
 	useEffect(() => {
 		fetchProductsAndCategories();
 		fetchUserCredentials().then(token => {
@@ -143,6 +152,7 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 			addToCart,
 			removeFromCart,
 			fetchProductWithVariants,
+			callPostCheckout,
 		}}>
 			{children}
 		</EcommerceContext.Provider>

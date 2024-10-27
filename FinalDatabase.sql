@@ -162,6 +162,7 @@ CREATE TABLE `User` (
   `password_hash` VARCHAR(255),
   `phone_number` VARCHAR(255),
   `delivery_location_id` INT,
+  `address` VARCHAR(255),
   `is_guest` BOOLEAN not null,
   `role_id` INT not null,
   `created_at` DATETIME not null,
@@ -214,10 +215,12 @@ delimiter ;
 CREATE TABLE `Order` (
   `order_id` INT AUTO_INCREMENT,
   `customer_id` INT,
+  `customer_name` VARCHAR(255),
   `contact_email` VARCHAR(255),
   `contact_phone` VARCHAR(255),
   `delivery_method` ENUM('store_pickup', 'delivery') NOT NULL,
   `delivery_location_id` INT,
+  `delivery_address` VARCHAR(255),
   `payment_method` ENUM('cash_on_delivery', 'card'),
   `total_amount` FLOAT,
   `order_status` ENUM('Processing', 'Shipped', 'Completed', 'Failed'),
@@ -292,6 +295,75 @@ BEGIN
     WHERE p.product_id = product_id
     GROUP BY p.product_id
     ORDER BY p.title;
+END$$
+
+CREATE PROCEDURE move_cart_to_order(IN p_user_id INT, OUT p_order_id INT)
+BEGIN
+    DECLARE v_total_amount FLOAT DEFAULT 0;
+    DECLARE v_contact_email VARCHAR(255);
+    DECLARE v_contact_phone VARCHAR(255);
+    DECLARE v_delivery_address VARCHAR(255);
+    DECLARE v_first_name VARCHAR(255);
+    DECLARE v_last_name VARCHAR(255);
+    DECLARE v_customer_name VARCHAR(255);
+
+    -- Step 1: Retrieve the user's email, phone number, address, first name, and last name from the User table
+    SELECT email, phone_number, address, first_name, last_name
+    INTO v_contact_email, v_contact_phone, v_delivery_address, v_first_name, v_last_name
+    FROM User
+    WHERE user_id = p_user_id;
+
+    -- Step 2: Concatenate the first and last names to form customer_name
+    SET v_customer_name = CONCAT(v_first_name, ' ', v_last_name);
+
+    -- Step 3: Create a new order with the retrieved contact information, delivery address, and customer_name
+    INSERT INTO `Order` (customer_id, contact_email, contact_phone, delivery_address, customer_name, order_status, purchased_time, created_at, updated_at)
+    VALUES (p_user_id, v_contact_email, v_contact_phone, v_delivery_address, v_customer_name, 'Processing', NOW(), NOW(), NOW());
+
+    -- Step 4: Get the order_id of the newly created order
+    SET p_order_id = LAST_INSERT_ID();
+
+    -- Step 4: Move items from Cart to OrderItem and calculate total amount
+    INSERT INTO OrderItem (order_id, variant_id, quantity, price)
+    SELECT p_order_id, c.variant_id, c.quantity, v.price
+    FROM Cart c
+    JOIN Variant v ON c.variant_id = v.variant_id
+    WHERE c.user_id = p_user_id;
+
+    -- Step 5: Calculate total amount
+    SELECT SUM(oi.price * oi.quantity) INTO v_total_amount
+    FROM OrderItem oi
+    WHERE oi.order_id = p_order_id;
+
+    -- Step 6: Update the total_amount in the Order table
+    UPDATE `Order`
+    SET total_amount = v_total_amount
+    WHERE order_id = p_order_id;
+
+    -- Step 7: Clear the Cart for the user
+    DELETE FROM Cart WHERE user_id = p_user_id;
+END$$
+
+CREATE TRIGGER update_inventory_and_calculate_total
+AFTER INSERT ON OrderItem
+FOR EACH ROW
+BEGIN
+    DECLARE v_total_amount FLOAT DEFAULT 0;
+
+    -- Step 1: Decrement the quantity in Inventory, even if it results in negative stock
+    UPDATE Inventory
+    SET quantity_available = quantity_available - NEW.quantity
+    WHERE variant_id = NEW.variant_id;
+
+    -- Step 2: Recalculate total_amount in the Order table
+    SELECT SUM(price * quantity) INTO v_total_amount
+    FROM OrderItem
+    WHERE order_id = NEW.order_id;
+
+    -- Step 3: Update the total_amount in the Order table
+    UPDATE `Order`
+    SET total_amount = v_total_amount
+    WHERE order_id = NEW.order_id;
 END$$
 
 CREATE PROCEDURE ADD_WAREHOUSE (location VARCHAR(255) , capacity INT)
@@ -537,6 +609,7 @@ BEGIN
         v.price,
         v.image_url,
         c.quantity,
+        i.quantity_available,
         (
             SELECT JSON_ARRAYAGG(
                 JSON_OBJECT(
@@ -550,6 +623,7 @@ BEGIN
         ) AS attributes
     FROM variant v
     JOIN cart c ON v.variant_id = c.variant_id
+    JOIN inventory i ON v.variant_id = i.variant_id
     WHERE c.user_id = p_user_id;
 END$$
 

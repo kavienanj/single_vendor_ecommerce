@@ -28,14 +28,24 @@ exports.getAllOrders = async (req, res) => {
 
 // Controller function to get an order by ID
 exports.getOrderById = async (req, res) => {
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const userId = parseInt(req.user.id);
     const { orderId } = req.params;
-
     try {
         const response = await model.getOrderById(orderId);
         if (!response) {
             return res.status(404).json({ message: 'Order not found' });
         }
-        res.json(response);
+        console.log(response[0], userId);
+        if (response[0].customer_id !== userId) {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+        res.json({
+            message: 'Order found',
+            order: response[0],
+        });
     } catch (err) {
         console.error('Error fetching order:', err);
         res.status(500).json({ message: 'Error fetching order', error: err.message });

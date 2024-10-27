@@ -71,11 +71,11 @@ exports.setQuantity = async (req, res) => {
 
 exports.checkout = async (req, res) => {
     const userId = parseInt(req.user.id);
-    const order_items = req.body;
     try {
-        await model.checkout({ userId , order_items });
+        const order = await model.checkout({ userId });
         res.status(200).json({
-            message: 'Checkout successful!'
+            message: 'Checkout successful!',
+            order_id: order.order_id,
         });
     } catch (err) {
         console.error('Error checking out:', err);

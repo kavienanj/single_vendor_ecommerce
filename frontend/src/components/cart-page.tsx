@@ -3,14 +3,31 @@
 import { Minus, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import Link from "next/link"
 import { useEcommerce } from "@/contexts/EcommerceContext"
+import { useState } from "react"
+import { apiClient } from "@/services/axiosClient"
+import { useRouter } from "next/navigation"
 
 export function CartPageComponent() {
-  const { addToCart, removeFromCart, cart } = useEcommerce();
+  const router = useRouter();
+  const { addToCart, removeFromCart, callPostCheckout, cart } = useEcommerce();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const calculateTotal = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0)
+  }
+
+  const handleCheckout = async () => {
+    setLoading(true);
+    const response = await apiClient.post("/cart/checkout").then((res) => res.data);
+    if (response) {
+      callPostCheckout();
+      router.push(`/checkout/${response.order_id}`);
+    } else {
+      setError("An error occurred while processing your order.");
+    }
+    setLoading(false);
   }
 
   return (
@@ -33,6 +50,12 @@ export function CartPageComponent() {
                       }
                     </p>
                     <p className="font-bold mt-1">${item.price.toFixed(2)}</p>
+                    {/* Stock available */}
+                    {(item.quantity_available - item.quantity) > 0 ? (
+                      <p className="text-green-500">In stock: {item.quantity_available - item.quantity}</p>
+                    ) : (
+                      <p className="text-red-500">Out of stock</p>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -81,9 +104,14 @@ export function CartPageComponent() {
                     <span>${calculateTotal().toFixed(2)}</span>
                   </div>
                 </div>
-                <Link href="/checkout/1">
-                  <Button className="w-full mt-6">Proceed to Checkout</Button>
-                </Link>
+                <Button
+                  className="w-full mt-6"
+                  onClick={handleCheckout}
+                  disabled={loading}
+                >
+                  {loading ? "Processing..." : "Proceed to Checkout"}
+                </Button>
+                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
               </CardContent>
             </Card>
           </div>

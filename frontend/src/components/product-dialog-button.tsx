@@ -169,7 +169,7 @@ export function ProductDialogButton({ product }: { product: Product }) {
             <span>Stock Available:</span>
             <div className={`w-[100px] font-semibold flex items-center justify-center ${selectedVariant.quantity_available <= 10 ? "text-red-500" : ""}`}>
               <span>
-                {selectedVariant.quantity_available === 0
+                {selectedVariant.quantity_available <= 0
                   ? "Out of Stock"
                   : selectedVariant.quantity_available
                 }
