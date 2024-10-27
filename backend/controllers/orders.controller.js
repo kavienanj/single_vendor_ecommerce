@@ -28,14 +28,24 @@ exports.getAllOrders = async (req, res) => {
 
 // Controller function to get an order by ID
 exports.getOrderById = async (req, res) => {
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const userId = parseInt(req.user.id);
     const { orderId } = req.params;
-
     try {
         const response = await model.getOrderById(orderId);
         if (!response) {
             return res.status(404).json({ message: 'Order not found' });
         }
-        res.json(response);
+        console.log(response[0], userId);
+        if (response[0].customer_id !== userId) {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+        res.json({
+            message: 'Order found',
+            order: response[0],
+        });
     } catch (err) {
         console.error('Error fetching order:', err);
         res.status(500).json({ message: 'Error fetching order', error: err.message });
@@ -61,6 +71,28 @@ exports.updateOrder = async (req, res) => {
     }
 };
 
+// Controller function to process an order
+exports.processOrder = async (req, res) => {
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const userId = parseInt(req.user.id);
+    const { orderId } = req.params;
+    const { name, phone, email, address, deliveryMethod, deliveryLocationId, paymentMethod } = req.body;
+    try {
+        await model.processOrder({ orderId, userId, name, phone, email, address, deliveryMethod, deliveryLocationId, paymentMethod });
+        res.status(200).json({
+            message: 'Order processed successfully!',
+        });
+    } catch (err) {
+        console.error('Error processing order:', err);
+        res.status(500).json({
+            message: 'Error processing order',
+            error: err.message
+        });
+    }
+};
+
 // Controller function to delete an order
 exports.deleteOrder = async (req, res) => {
     const { orderId } = req.params;
@@ -81,11 +113,16 @@ exports.deleteOrder = async (req, res) => {
 
 // Controller function to get orders by user ID
 exports.getUserOrders = async (req, res) => {
-    const { userId } = req.params;
-
+    if (req.user === undefined) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const userId = parseInt(req.user.id);
     try {
         const response = await model.getUserOrders(userId);
-        res.json(response);
+        res.json({
+            message: 'User orders fetched successfully!',
+            orders: response,
+        });
     } catch (err) {
         console.error('Error fetching user orders:', err);
         res.status(500).json({ message: 'Error fetching user orders', error: err.message });

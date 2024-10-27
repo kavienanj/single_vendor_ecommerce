@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { apiClient, setTokenToApiClientHeader } from '@/services/axiosClient';
+import { apiClient } from '@/services/axiosClient';
+import { useAuth } from './AuthContext';
 
 export interface Product {
 	product_id: number;
@@ -24,6 +25,7 @@ export interface Variant {
 	variant_name: string;
 	image_url: string;
 	price: number;
+	quantity_available: number;
 	attributes: VariantAttribute[];
 }
 
@@ -42,6 +44,32 @@ export interface Category {
 	sub_categories?: Category[];
 }
 
+export interface Order {
+  order_id: number;
+  customer_id: number;
+  customer_name: string;
+  contact_email: string | null;
+  contact_phone: string | null;
+  delivery_address: string | null;
+  delivery_method: string;
+  delivery_location_id: number | null;
+  payment_method: string | null;
+  total_amount: number;
+  order_status: string;
+  purchased_time: string;
+  delivery_estimate: number | null;
+  created_at: string;
+  updated_at: string;
+  items: {
+    variant_id: number;
+    price: number;
+    quantity: number;
+    total_price: number;
+    variant_name: string;
+    quantity_available: number;
+  }[]
+}
+
 // Define the shape of the context state
 interface EcommerceContextState {
 	cart: CartItem[];
@@ -50,6 +78,7 @@ interface EcommerceContextState {
 	addToCart: (variant: Variant, quantity: number) => void;
 	removeFromCart: (variantId: number) => void;
 	fetchProductWithVariants: (productId: number) => Promise<ProductWithVarients>;
+	callPostCheckout: () => void;
 }
 
 // Create the context with default values
@@ -60,6 +89,7 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 	const [cart, setCart] = useState<CartItem[]>([]);
 	const [products, setProducts] = useState<Product[]>([]);
 	const [categories, setCategories] = useState<Category[]>([]);
+	const { user } = useAuth();
 
 	// Fetch products and categories from an API or other source
 	const fetchProductsAndCategories = async () => {
@@ -70,15 +100,6 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 		setProducts(fetchedProducts);
 		setCategories(fetchedCategories);
 	};
-
-	const fetchUserCredentials = async () => {
-		if (localStorage.getItem('token')) {
-			return localStorage.getItem('token');
-		}
-		const token = await apiClient.post('/register', { is_guest: true }).then(res => res.data.token);
-		localStorage.setItem('token', token);
-		return token;
-	}
 
 	const fetchUserCart = async () => {
 		const cart = await apiClient.get(`/cart`).then(res => res.data);
@@ -100,15 +121,13 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 		return product;
 	}
 
-	useEffect(() => {
+	const callPostCheckout = async () => {
+		setCart([]);
 		fetchProductsAndCategories();
-		fetchUserCredentials().then(token => {
-			setTokenToApiClientHeader(token);
-			fetchUserCart().then(cart => {
-				setCart(cart);
-			});
+		fetchUserCart().then(cart => {
+			setCart(cart);
 		});
-	}, []);
+	}
 
 	const addToCart = (variant: Variant, quantity: number) => {
 		if (cart.some((item) => item.variant_id === variant.variant_id)) {
@@ -134,6 +153,15 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 		fetchRemoveFromCart(variantId);
 	};
 
+	useEffect(() => {
+		fetchProductsAndCategories();
+		if (user) {
+			fetchUserCart().then(cart => {
+				setCart(cart);
+			});
+		}
+	}, [user]);
+
 	return (
 		<EcommerceContext.Provider value={{ 
 			cart,
@@ -142,6 +170,7 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 			addToCart,
 			removeFromCart,
 			fetchProductWithVariants,
+			callPostCheckout,
 		}}>
 			{children}
 		</EcommerceContext.Provider>

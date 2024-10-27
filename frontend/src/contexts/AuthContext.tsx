@@ -66,6 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
+    registerGuestUser().then(loadUserFromToken);
   };
 
   const registerUser = async (payload: RegisterUserPayload) => {
@@ -94,6 +95,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const registerGuestUser = async () => {
+		const token = await apiClient.post('/register', { is_guest: true }).then(res => res.data.token);
+		return token;
+	}
+
+  const authenticateUser = async () => {
+    try {
+      await apiClient.post('/authenticate');
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  const loadUserFromToken = async (token: string) => {
+    localStorage.setItem('token', token);
+    setTokenToApiClientHeader(token);
+    const decodedUser: User = jwtDecode(token);
+    setUser(decodedUser);
+    setLoading(false);
+  }
+
   function isAdmin (): boolean {
     return user?.role_id === 1;
   }
@@ -110,11 +133,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     const token = localStorage.getItem('token');
     if (token) {
+      console.log('Found User token');
       setTokenToApiClientHeader(token);
-      const decodedUser: User = jwtDecode(token);
-      setUser(decodedUser);
+      authenticateUser().then((isAuthenticated) => {
+        if (isAuthenticated) {
+          console.log('User is authenticated');
+          loadUserFromToken(token);
+        } else {
+          console.log('User is not authenticated');
+          localStorage.removeItem('token');
+          console.log('Registering guest user');
+          registerGuestUser().then(loadUserFromToken);
+        }
+      });
+    } else {
+      console.log('Registering guest user');
+      registerGuestUser().then(loadUserFromToken);
     }
-    setLoading(false);
   }, []);
 
   return (

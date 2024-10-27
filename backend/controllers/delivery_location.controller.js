@@ -19,7 +19,10 @@ exports.addDeliveryLocation = async (req, res) => {
 exports.getAllDeliveryLocations = async (req, res) => {
     try {
         const response = await model.getAllDeliveryLocations();
-        res.json(response);
+        res.json({
+            message: 'Delivery locations fetched successfully!',
+            deliveryLocations: response,
+        });
     } catch (err) {
         console.error('Error fetching delivery locations:', err);
         res.status(500).json({ message: 'Error fetching delivery locations', error: err.message });

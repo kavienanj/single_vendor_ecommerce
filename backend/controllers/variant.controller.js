@@ -47,6 +47,21 @@ exports.updateVariant = async (req, res) => {
     }
 };
 
+// Update a variant stock
+exports.updateStock = async (req, res) => {
+    if (req.user === undefined || req.user.role_id !== 1) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const { id } = req.params;
+    const { quantity } = req.body;
+    try {
+        await Variant.updateStock(id, quantity);
+        res.status(200).json({ message: 'Stock updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 // Delete a variant
 exports.deleteVariant = async (req, res) => {
     const { id } = req.params;

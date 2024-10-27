@@ -78,55 +78,13 @@ exports.deleteProduct = ({ id }) => {
 // Function to get product with variants and attributes
 exports.getProductWithVariantsAndAttributes = ({ id }) => {
     return new Promise((resolve, reject) => {
-        const query = `
-            SELECT 
-                p.product_id as product_id,
-                p.title AS product_name,
-                p.description AS product_description,
-                p.default_price AS price,
-                p.default_image AS image_url,
-                p.sku,
-                p.weight,
-                JSON_ARRAYAGG(c.category_name) AS categories,
-                (
-                    SELECT JSON_ARRAYAGG(
-                        JSON_OBJECT(
-                            'variant_id', dv.variant_id,
-                            'variant_name', dv.name,
-                            'price', dv.price,
-                            'image_url', dv.image_url,
-                            'attributes', (
-                                SELECT JSON_ARRAYAGG(
-                                    JSON_OBJECT(
-                                        'attribute_name', ca.attribute_name,
-                                        'attribute_value', cav.attribute_value
-                                    )
-                                )
-                                FROM Custom_Attribute ca
-                                JOIN Custom_Attribute_Value cav ON ca.attribute_id = cav.attribute_id
-                                WHERE cav.variant_id = dv.variant_id
-                            )
-                        )
-                    )
-                    FROM (
-                        SELECT DISTINCT *
-                        FROM Variant v
-                        WHERE v.product_id = p.product_id
-                    ) AS dv
-                ) AS variants
-            FROM Product p
-            JOIN Product_Category_Match pcm ON p.product_id = pcm.product_id
-            JOIN Category c ON pcm.category_id = c.category_id
-            WHERE p.product_id = ?
-            GROUP BY p.product_id
-            ORDER BY p.title;
-        `;
+        const query = `CALL GetProductDetails(?)`;
 
         db.query(query, [id], (err, rows) => {
             if (err) {
                 return reject(err);
             }
-            resolve(rows[0]);
+            resolve(rows[0][0]);
         });
     });
 };

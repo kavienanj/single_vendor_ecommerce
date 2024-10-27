@@ -14,6 +14,9 @@ router.get('/:id', VariantController.getVariantById);
 // Update a variant by ID
 router.put('/:id', VariantController.updateVariant);
 
+// Update a variant stock by ID
+router.post('/:id/stock', VariantController.updateStock);
+
 // Delete a variant by ID
 router.delete('/:id', VariantController.deleteVariant);
 

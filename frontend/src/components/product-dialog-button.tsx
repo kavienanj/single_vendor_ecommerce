@@ -13,10 +13,12 @@ import {
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type ProductAttributeValues = { [key: string]: string[] }
 
 export function ProductDialogButton({ product }: { product: Product }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
@@ -109,7 +111,7 @@ export function ProductDialogButton({ product }: { product: Product }) {
           <div className="grid grid-cols-2 items-center gap-4">
 
             <img
-              src={product.image_url}
+              src={selectedVariant?.image_url || product.image_url}
               alt={product.product_name}
               className="w-full h-48 object-cover rounded-md"
             />
@@ -164,6 +166,19 @@ export function ProductDialogButton({ product }: { product: Product }) {
             </div>
           </div>
         </div>
+        {selectedVariant && (
+          <div className="flex items-center justify-between">
+            <span>Stock Available:</span>
+            <div className={`w-[100px] font-semibold flex items-center justify-center ${selectedVariant.quantity_available <= 10 ? "text-red-500" : ""}`}>
+              <span>
+                {selectedVariant.quantity_available <= 0
+                  ? "Out of Stock"
+                  : selectedVariant.quantity_available
+                }
+              </span>
+            </div>
+          </div>
+        )}
         <div className="flex flex-col gap-2 w-full">
           {selectedVariant ? (
             <Button 
@@ -188,7 +203,15 @@ export function ProductDialogButton({ product }: { product: Product }) {
               </Button>
             </Link>
           ) : (
-            <Button variant="outline" className="w-full" disabled={loading || !selectedVariant}>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              disabled={loading || !selectedVariant}
+              onClick={() => {
+                addToCart(selectedVariant!, quantity)
+                router.push("/my-cart")
+              }}
+            >
               Buy Now
             </Button>
           )}

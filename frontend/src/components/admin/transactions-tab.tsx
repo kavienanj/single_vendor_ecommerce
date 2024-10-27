@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -10,23 +10,39 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { apiClient } from '@/services/axiosClient'
 
-const transactionData = [
-  { id: 'T001', date: '2023-05-15', customer: 'Alice Johnson', amount: 150.00, status: 'Completed' },
-  { id: 'T002', date: '2023-05-14', customer: 'Bob Smith', amount: 75.50, status: 'Pending' },
-  { id: 'T003', date: '2023-05-13', customer: 'Charlie Brown', amount: 200.00, status: 'Completed' },
-  { id: 'T004', date: '2023-05-12', customer: 'Diana Ross', amount: 50.00, status: 'Failed' },
-  { id: 'T005', date: '2023-05-11', customer: 'Edward Norton', amount: 125.75, status: 'Completed' },
-]
+interface Transaction {
+  user_id: number
+  customer_name: string
+  email: string
+  order_id: number
+  purchased_time: string
+  order_status: string
+  total_amount: number
+  number_of_items: number
+  variant_names: string
+  total_quantity: number
+  total_price: number
+}
 
 export function TransactionsTab() {
   const [searchTerm, setSearchTerm] = useState('')
+  const [transactionData, setTransactionData] = useState<Transaction[]>([]);
 
   const filteredTransactions = transactionData.filter(transaction =>
-    transaction.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.status.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+    transaction.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    transaction.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const fetchOrders = async () => {
+    const orders = await apiClient.get('/customer-report').then(res => res.data);
+    setTransactionData(orders.data);
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -43,18 +59,20 @@ export function TransactionsTab() {
               <TableHead className="w-[100px]">ID</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Customer</TableHead>
+              <TableHead>Items</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTransactions.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TableCell className="font-medium">{transaction.id}</TableCell>
-                <TableCell>{transaction.date}</TableCell>
-                <TableCell>{transaction.customer}</TableCell>
-                <TableCell>${transaction.amount.toFixed(2)}</TableCell>
-                <TableCell>{transaction.status}</TableCell>
+            {transactionData.map((transaction) => (
+              <TableRow key={transaction.order_id}>
+                <TableCell className="font-medium">{transaction.order_id}</TableCell>
+                <TableCell>{transaction.purchased_time}</TableCell>
+                <TableCell>{transaction.customer_name}</TableCell>
+                <TableCell>{transaction.number_of_items}</TableCell>
+                <TableCell>${transaction.total_price.toFixed(2)}</TableCell>
+                <TableCell>{transaction.order_status}</TableCell>
               </TableRow>
             ))}
           </TableBody>

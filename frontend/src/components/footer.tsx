@@ -12,7 +12,7 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4">About Us</h3>
             <p className="text-sm text-gray-600">
-              My Ecommerce is your one-stop shop for all your electronic needs. We offer a wide range of products at competitive prices.
+              C Ecommerce is your one-stop shop for all your electronic needs. We offer a wide range of products at competitive prices.
             </p>
           </div>
           <div>
@@ -43,7 +43,7 @@ export default function Footer() {
         </div>
         <div className="mt-8 pt-8 border-t border-gray-200">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-gray-600">&copy; 2024 My Ecommerce. All rights reserved.</p>
+            <p className="text-sm text-gray-600">&copy; 2024 C Ecommerce. All rights reserved.</p>
             <div className="flex space-x-4 mt-4 md:mt-0">
               <a href="#" className="text-gray-600 hover:text-gray-900">
                 <span className="sr-only">Facebook</span>
