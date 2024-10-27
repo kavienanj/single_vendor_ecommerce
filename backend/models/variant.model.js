@@ -23,9 +23,10 @@ exports.createVariant = ({ productId, name, price, imageUrl }) => {
 // Get all variants
 exports.getAllVariants = () => {
     const query = `
-    SELECT v.product_id, v.variant_id, v.name, v.price, v.image_url, i.quantity_available
+    SELECT v.product_id, p.title as product_name, v.variant_id, v.name, v.price, v.image_url, i.quantity_available
     FROM Variant v
-    LEFT JOIN Inventory i ON v.variant_id = i.variant_id
+    LEFT JOIN Inventory i ON v.variant_id = i.variant_id 
+    LEFT JOIN Product p ON v.product_id = p.product_id
     ORDER BY v.product_id, v.variant_id`;
     return runQuery(query);
 };

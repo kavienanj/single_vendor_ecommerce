@@ -100,5 +100,9 @@ Before you begin, ensure you have the following installed:
 └── README.md                   # Project documentation
 ```
 
-## Team Members
-Kavienan J. 220314M
+## Team Members (Group 25)
+KAVIENAN J.	220314M	kavienanj.22@uom.lk
+PANAGODA P.L.A.S.	220440U	panagodaplas.22@uom.lk
+RAVISHAN A.D.P.	220532E	ravishanadp.22@uom.lk
+JAYARATNE T.D.	220254D	jayaratnetd.22@uom.lk
+LOKUHEWA P.C.	220366X	lokuhewapc.22@uom.lk

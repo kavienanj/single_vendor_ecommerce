@@ -111,7 +111,7 @@ export function ProductDialogButton({ product }: { product: Product }) {
           <div className="grid grid-cols-2 items-center gap-4">
 
             <img
-              src={product.image_url}
+              src={selectedVariant?.image_url || product.image_url}
               alt={product.product_name}
               className="w-full h-48 object-cover rounded-md"
             />

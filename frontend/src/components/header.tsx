@@ -108,9 +108,9 @@ export default function Header() {
                 )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {isCustomer() && (
+              {/* {isCustomer() && (
                 <DropdownMenuItem>Profile</DropdownMenuItem>
-              )}
+              )} */}
               {isGuest() && (
                 <Link href="/sign-in">
                   <DropdownMenuItem>

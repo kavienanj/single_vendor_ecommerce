@@ -112,9 +112,12 @@ export function HomePageComponent() {
                 <SelectContent>
                   <SelectItem value="12">Show 12</SelectItem>
                   <SelectItem value="24">Show 24</SelectItem>
-                  <SelectItem value="36">Show 36</SelectItem>
+                  <SelectItem value="-1">Show All</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="pl-4 flex items-center text-sm text-gray-600">
+                Showing {showCount === "-1" ? 'All' : showCount} of {products.length} products
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

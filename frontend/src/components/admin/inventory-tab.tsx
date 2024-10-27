@@ -22,6 +22,7 @@ import { apiClient } from '@/services/axiosClient';
 
 interface Variant {
   product_id: number;
+  product_name: string;
   variant_id: number;
   name: string;
   price: number;
@@ -80,7 +81,9 @@ export function InventoryTab() {
                     : ''
                   }`}>
                 <TableCell className="font-medium">{item.variant_id}</TableCell>
-                <TableCell>{item.name}</TableCell>
+                <TableCell>
+                  {item.product_name} ({item.name})
+                </TableCell>
                 <TableCell>${item.price.toFixed(2)}</TableCell>
                 <TableCell>
                   <Input
