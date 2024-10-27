@@ -59,7 +59,7 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [deliveryLocations, setDeliveryLocations] = useState<DeliveryLocation[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const { user } = useAuth();
+  const { user, isGuest, loading: loadingAuth } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -89,6 +89,7 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
         paymentMethod: response.data.order.payment_method || "cash",
       });
       setLoading(false);
+      setError(null);
     } catch (error) {
       setError("An error occurred while fetching the order");
       setLoading(false);
@@ -133,11 +134,11 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
   }
 
   useEffect(() => {
-    if (user) {
+    if (user || isGuest()) {
       fetchOrder();
       fetchDeliveryLocations();
     }
-  }, [user]);
+  }, [user, loadingAuth]);
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -253,21 +254,21 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
                   <div className="space-y-4">
                     <div className="grid gap-2">
                       <Label htmlFor="name">Name</Label>
-                      <Input id="name" name="name" value={formData.name} onChange={handleInputChange} />
+                      <Input id="name" name="name" defaultValue={formData.name} onChange={handleInputChange} />
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="phone">Phone</Label>
-                        <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} />
+                        <Input id="phone" name="phone" defaultValue={formData.phone} onChange={handleInputChange} />
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} />
+                        <Input id="email" name="email" type="email" defaultValue={formData.email} onChange={handleInputChange} />
                       </div>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="address">Address</Label>
-                      <Input id="address" name="address" value={formData.address} onChange={handleInputChange} />
+                      <Input id="address" name="address" defaultValue={formData.address} onChange={handleInputChange} />
                     </div>
                   </div>
                 </div>
@@ -367,7 +368,7 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
                         <Input
                           id="cardNumber"
                           name="cardNumber"
-                          value={formData.cardNumber}
+                          defaultValue={formData.cardNumber}
                           onChange={handleInputChange}
                         />
                       </div>
@@ -378,7 +379,7 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
                             id="cardExpiry"
                             name="cardExpiry"
                             placeholder="MM/YY"
-                            value={formData.cardExpiry}
+                            defaultValue={formData.cardExpiry}
                             onChange={handleInputChange}
                           />
                         </div>

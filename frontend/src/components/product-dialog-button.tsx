@@ -13,10 +13,12 @@ import {
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type ProductAttributeValues = { [key: string]: string[] }
 
 export function ProductDialogButton({ product }: { product: Product }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
@@ -201,7 +203,15 @@ export function ProductDialogButton({ product }: { product: Product }) {
               </Button>
             </Link>
           ) : (
-            <Button variant="outline" className="w-full" disabled={loading || !selectedVariant}>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              disabled={loading || !selectedVariant}
+              onClick={() => {
+                addToCart(selectedVariant!, quantity)
+                router.push("/my-cart")
+              }}
+            >
               Buy Now
             </Button>
           )}
