@@ -46,68 +46,59 @@ Before you begin, ensure you have the following installed:
 
    Replace `your_password` with your actual MySQL password and `YourDatabaseName` with the name of your database.
 
-5. **Configure MySQL database**
+5. **Run the SQL script**
 
-   Make sure you have a MySQL database set up that matches the credentials in your `.env` file. You also need to create a table for the products.
+   Run the following command to create the database and table:
 
-   Example SQL to create the `Product` table:
-
-   ```sql
-   CREATE TABLE Product (
-       product_id INT AUTO_INCREMENT PRIMARY KEY,
-       title VARCHAR(255),
-       description TEXT,
-       sku VARCHAR(100),
-       weight DECIMAL(5,2),
-       created_at DATETIME,
-       updated_at DATETIME
-   );
+   ```bash
+   mysql -u root -p < FinalDatabase.sql
    ```
+   Enter your MySQL password when prompted.
 
 6. **Run the server**
 
    To start the server, and listen for changes, run the following command:
 
    ```bash
+   cd backend
    npm run dev
    ```
 
-   The server will start on the port defined in the `server.js` file (by default, port 3000).
+   The server will start on the port `3000` defined in the `server.js` file.
 
-7. **Testing the API**
+7. **Setup the frontend**
 
-   Once the server is running, you can interact with the API using an API testing tool like [Postman](https://www.postman.com/) or [cURL](https://curl.se/).
+   The Next.js frontend is located in the `frontend` directory. To run the frontend, navigate to the `frontend` directory and run the following command:
 
-   - **Add a product** (POST): `http://localhost:3000/products`
-   - **Get all products** (GET): `http://localhost:3000/products`
-   - **Update a product** (PUT): `http://localhost:3000/products/:id`
-   - **Delete a product** (DELETE): `http://localhost:3000/products/:id`
+   ```bash
+   npm install
+   npm run dev
+   ```
+   The frontend will start on the port `3001`.
+
 
 ## Project Structure
 
 ```
 ├── backend/
 │   ├── routes/                 # Express routing
-│   │   └── products.routes.js
 │   ├── controllers/            # API controllers
-│   │   └── products.controller.js
 │   ├── models/                 # Database models
-│   │   └── products.model.js
-│   ├── db/                            # Migration and seed files
-|   |   ├── init_db.sql                # SQL script for initial database setup
-│   |   └── create_products_table.sql  # SQL script for creating products table
-│   ├── routes/                 # Express routing
+|   ├── middleware/             # Middleware functions
 │   ├── db.js                   # Database connection logic
 │   ├── server.js               # Main server setup and middleware
+│   ├── package.json            # Backend dependencies and scripts
 │   └── .env                    # Environment variables
-├── frontend/                   # Frontend folder (if applicable)
+|-- frontend/
+|   ├── src/
+|   |   ├── app/                # Main app component
+|   |   ├── components/         # React components
+|   |   └── services/           # API service
+|   └── package.json            # Frontend dependencies and scripts
 ├── .gitignore                  # Git ignore file
-├── package.json                # Project dependencies and scripts
-├── setup.sql                   # SQL script for initial database setup
+├── FinalDatabase.sql           # SQL script for creating the database and table
 └── README.md                   # Project documentation
 ```
 
-## Available Scripts
-
-- **`npm install`**: Install dependencies inside the `backend` directory.
-- **`node server.js`**: Run the server.
+## Team Members
+Kavienan J. 220314M

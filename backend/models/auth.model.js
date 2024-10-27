@@ -45,3 +45,17 @@ exports.getUsers = () => {
         });
     });
 }
+
+// Function to find a user by id
+exports.findUserById = (id) => {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM User WHERE user_id = ?';
+        
+        db.query(query, [id], (err, results) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(results.length > 0 ? results[0] : null); // Return the user if found, otherwise null
+        });
+    });
+};

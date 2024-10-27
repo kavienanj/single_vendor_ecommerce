@@ -109,6 +109,19 @@ exports.loginUser = async (req, res) => {
     }
 };
 
+exports.authenticate = async (req, res) => {
+    if (req.user) {
+        const user = await model.findUserById(req.user.id)
+        if (user?.role_id === req.user.role_id) {
+            res.status(200).json({ message: 'Authorized' });
+        } else {
+            res.status(401).json({ message: 'Unauthorized' });
+        }
+    } else {
+        res.status(401).json({ message: 'Unauthorized' });
+    }
+};
+
 exports.getUsers = async (req, res) => {
     if (req.user === undefined || req.user.role_id !== 1) {
         return res.status(401).json({ message: 'Unauthorized' });

@@ -23,7 +23,7 @@ const authMiddleware = (req, res, next) => {
             last_name: user.last_name,
             role_id: user.role_id,
         }
-        console.log('req.user:', req.user);
+        // console.log('req.user:', req.user);
         next();
     });
 };

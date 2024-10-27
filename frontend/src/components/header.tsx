@@ -44,7 +44,7 @@ export default function Header() {
     <header className="bg-white shadow-sm">
       <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
         <Link href="/">
-          <h1 className="text-2xl font-bold">My Ecommerce</h1>
+          <h1 className="text-2xl font-bold">C Ecommerce</h1>
         </Link>
         <div className="flex-1 max-w-md w-full" ref={searchRef}>
           <div className="relative">

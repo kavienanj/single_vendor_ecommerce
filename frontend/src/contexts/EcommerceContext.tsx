@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { apiClient, setTokenToApiClientHeader } from '@/services/axiosClient';
+import { apiClient } from '@/services/axiosClient';
+import { useAuth } from './AuthContext';
 
 export interface Product {
 	product_id: number;
@@ -88,6 +89,7 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 	const [cart, setCart] = useState<CartItem[]>([]);
 	const [products, setProducts] = useState<Product[]>([]);
 	const [categories, setCategories] = useState<Category[]>([]);
+	const { user } = useAuth();
 
 	// Fetch products and categories from an API or other source
 	const fetchProductsAndCategories = async () => {
@@ -98,15 +100,6 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 		setProducts(fetchedProducts);
 		setCategories(fetchedCategories);
 	};
-
-	const fetchUserCredentials = async () => {
-		if (localStorage.getItem('token')) {
-			return localStorage.getItem('token');
-		}
-		const token = await apiClient.post('/register', { is_guest: true }).then(res => res.data.token);
-		localStorage.setItem('token', token);
-		return token;
-	}
 
 	const fetchUserCart = async () => {
 		const cart = await apiClient.get(`/cart`).then(res => res.data);
@@ -136,16 +129,6 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 		});
 	}
 
-	useEffect(() => {
-		fetchProductsAndCategories();
-		fetchUserCredentials().then(token => {
-			setTokenToApiClientHeader(token);
-			fetchUserCart().then(cart => {
-				setCart(cart);
-			});
-		});
-	}, []);
-
 	const addToCart = (variant: Variant, quantity: number) => {
 		if (cart.some((item) => item.variant_id === variant.variant_id)) {
 			if (quantity <= 0) {
@@ -169,6 +152,15 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 		setCart((prevCart) => prevCart.filter((item) => item.variant_id !== variantId));
 		fetchRemoveFromCart(variantId);
 	};
+
+	useEffect(() => {
+		fetchProductsAndCategories();
+		if (user) {
+			fetchUserCart().then(cart => {
+				setCart(cart);
+			});
+		}
+	}, [user]);
 
 	return (
 		<EcommerceContext.Provider value={{ 
