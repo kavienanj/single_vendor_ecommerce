@@ -2061,6 +2061,51 @@ VALUES
 (7, 12, 0, 1, 799.99),  -- Nick's order has 1 Samsung Galaxy A52
 (8, 18, 0, 1, 299.99);   -- Pilip's order has 1 OnePlus 11
 
+-- new insert statements for top product category 
+
+INSERT INTO `Order` (`customer_id`, `contact_email`, `contact_phone`, `delivery_method`, `delivery_location_id`, `payment_method`, `total_amount`, `order_status`, `purchased_time`, `delivery_estimate`, `created_at`, `updated_at`)
+VALUES 
+(6, 'alice@example.com', '555-987-1234', 'delivery', 2, 'cash_on_delivery', 549.99, 'Completed', '2024-02-01 11:00:00', 5, NOW(), NOW()),
+(7, 'bob@example.com', '444-333-9999', 'store_pickup', 3, 'card', 249.99, 'Shipped', '2024-03-04 13:15:00', 3, NOW(), NOW()),
+(8, 'claire@example.com', '333-444-5555', 'delivery', 1, 'card', 799.99, 'Processing', '2024-04-06 14:00:00', 6, NOW(), NOW()),
+(9, 'daniel@example.com', '111-222-3333', 'store_pickup', 2, 'cash_on_delivery', 99.99, 'Confirmed', '2024-05-10 09:30:00', 2, NOW(), NOW()),
+(10, 'emma@example.com', '999-888-7777', 'delivery', 3, 'card', 649.99, 'Failed', '2024-06-15 17:20:00', 4, NOW(), NOW()),
+(6, 'alice@example.com', '555-987-1234', 'store_pickup', 4, 'card', 129.99, 'Processing', '2024-08-12 16:50:00', 2, NOW(), NOW()),
+(7, 'bob@example.com', '444-333-9999', 'delivery', 1, 'cash_on_delivery', 549.99, 'Completed', '2024-09-18 12:00:00', 3, NOW(), NOW()),
+(8, 'claire@example.com', '333-444-5555', 'store_pickup', 2, 'card', 299.99, 'Completed', '2024-10-21 13:30:00', 5, NOW(), NOW()),
+(9, 'daniel@example.com', '111-222-3333', 'delivery', 3, 'card', 799.99, 'Shipped', '2024-11-03 15:00:00', 4, NOW(), NOW()),
+(10, 'emma@example.com', '999-888-7777', 'store_pickup', 4, 'card', 399.99, 'Confirmed', '2024-12-07 11:45:00', 1, NOW(), NOW());
+
+
+INSERT INTO `OrderItem` (order_id, variant_id, discount, quantity, price) 
+VALUES 
+(9, 7, 0, 1, 549.99),    -- Alice's order with JBL Flip 6
+(10, 4, 10, 1, 299.99),  -- Bob's order with iPhone 14 Pro with discount
+(11, 8, 5, 2, 399.99),   -- Claire's order with 2 Sony SRS-XB43s with discount
+(12, 5, 0, 1, 129.99),   -- Daniel's order with OnePlus 11
+(13, 6, 0, 1, 649.99),   -- Emma's order with Samsung Galaxy A52
+(9, 3, 0, 1, 249.99),    -- Alice's order with Sony SRS-XB43
+(10, 2, 0, 1, 399.99),   -- Bob's order with MacBook Air M2
+(11, 12, 15, 1, 299.99), -- Claire's order with discounted Galaxy A52
+(12, 16, 0, 1, 149.99),  -- Daniel's order with Sony SRS-XB43
+(13, 14, 0, 1, 389.99);  -- Emma's order with Bose SoundLink Revolve
+
+
+INSERT INTO `OrderItem` (order_id, variant_id, discount, quantity, price) 
+VALUES 
+(9, 40, 0, 1, 549.99),    -- Alice's order with JBL Flip 6 (variant_id updated to 40)
+(10, 41, 10, 1, 299.99),  -- Bob's order with iPhone 14 Pro with discount (variant_id updated to 41)
+(11, 42, 5, 2, 399.99),   -- Claire's order with 2 Sony SRS-XB43s with discount (variant_id updated to 42)
+(12, 43, 0, 1, 129.99),   -- Daniel's order with OnePlus 11 (variant_id updated to 43)
+(13, 44, 0, 1, 649.99),   -- Emma's order with Samsung Galaxy A52 (variant_id updated to 44)
+(9, 45, 0, 1, 249.99),    -- Alice's order with Sony SRS-XB43 (variant_id updated to 45)
+(10, 46, 0, 1, 399.99),   -- Bob's order with MacBook Air M2 (variant_id updated to 46)
+(11, 47, 15, 1, 299.99),  -- Claire's order with discounted Galaxy A52 (variant_id updated to 47)
+(12, 48, 0, 1, 149.99),   -- Daniel's order with Sony SRS-XB43 (variant_id updated to 48)
+(13, 49, 0, 1, 389.99);   -- Emma's order with Bose SoundLink Revolve (variant_id updated to 49)
+
+-- ends here
+
 UPDATE `Variant` 
 SET interested = interested + 5
 WHERE `variant_id` = 1;  -- 5 people are interested in Samsung Galaxy S21
