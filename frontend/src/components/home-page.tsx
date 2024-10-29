@@ -9,6 +9,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Category, useEcommerce } from "@/contexts/EcommerceContext"
 import { ProductDialogButton } from "./product-dialog-button"
+import { CarouselComponent } from "./home/carousel-slider"
 
 export function HomePageComponent() {
   const { products, categories } = useEcommerce()
@@ -66,6 +67,7 @@ export function HomePageComponent() {
 
   return (
     <main className="container mx-auto px-4 py-8">
+      <CarouselComponent />
       <div className="mb-6 text-lg font-semibold">
         {selectedCategory === "All" ? "Showing all products" : `Showing ${selectedSubCategory || selectedCategory}`}
       </div>

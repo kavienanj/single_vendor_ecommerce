@@ -120,7 +120,14 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
   }
 
   if (error) {
-    return <div className="flex items-center justify-center h-screen">{error}</div>;
+    return (
+      <div className="h-[50vh] flex flex-col items-center justify-center space-y-4 mt-8">
+        {error}
+        <Link className="mt-4" href="/">
+          <Button>Continue Shopping</Button>
+        </Link>
+      </div>
+    );
   }
 
   if (order?.order_status === "Confirmed") {

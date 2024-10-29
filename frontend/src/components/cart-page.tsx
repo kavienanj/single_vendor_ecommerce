@@ -7,6 +7,7 @@ import { useEcommerce } from "@/contexts/EcommerceContext"
 import { useState } from "react"
 import { apiClient } from "@/services/axiosClient"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export function CartPageComponent() {
   const router = useRouter();
@@ -34,7 +35,12 @@ export function CartPageComponent() {
     <main className="min-h-[50vh] container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Your Cart</h1>
       {cart.length === 0 ? (
-        <p className="text-center text-gray-500">Your cart is empty.</p>
+        <div className="flex flex-col items-center space-y-4 mt-8">
+          <p className="text-center text-gray-500">Your cart is empty.</p>
+          <Link className="mt-4" href="/">
+            <Button>Continue Shopping</Button>
+          </Link>
+        </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2 space-y-4">
