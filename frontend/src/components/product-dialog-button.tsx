@@ -4,6 +4,7 @@ import { Plus, Minus } from "lucide-react";
 import { Product, useEcommerce, Variant } from "@/contexts/EcommerceContext";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -17,7 +18,14 @@ import { useRouter } from "next/navigation";
 
 type ProductAttributeValues = { [key: string]: string[] }
 
-export function ProductDialogButton({ product }: { product: Product }) {
+interface ProductDialogButtonProps {
+  product: Product;
+  children?: React.ReactNode;
+  isOpen?: boolean;
+  onClose?: (open: boolean) => void;
+}
+
+export function ProductDialogButton({ product, children, isOpen, onClose }: ProductDialogButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [variants, setVariants] = useState<Variant[]>([]);
@@ -86,20 +94,25 @@ export function ProductDialogButton({ product }: { product: Product }) {
 
   useEffect(() => {
     setLoading(true)
+    if (isOpen) {
+      loadVariants()
+    }
   }, [product])
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button
-          className="w-full"
-          onClick={async () => {
-            await loadVariants();
-          }}
-        >
-          Add to Cart
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      {children || (
+        <DialogTrigger asChild>
+          <Button
+            className="w-full"
+            onClick={async () => {
+              await loadVariants();
+            }}
+          >
+            Add to Cart
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{product.product_name}</DialogTitle>
@@ -198,22 +211,26 @@ export function ProductDialogButton({ product }: { product: Product }) {
           )}
           {selectedVariant && isInCart(selectedVariant.variant_id) ? (
             <Link href="/my-cart">
-              <Button variant="link" className="w-full" disabled={loading || !selectedVariant}>
-                View in Cart
-              </Button>
+              <DialogClose asChild>
+                <Button variant="link" className="w-full" disabled={loading || !selectedVariant}>
+                  View in Cart
+                </Button>
+              </DialogClose>
             </Link>
           ) : (
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              disabled={loading || !selectedVariant}
-              onClick={() => {
-                addToCart(selectedVariant!, quantity)
-                router.push("/my-cart")
-              }}
-            >
-              Buy Now
-            </Button>
+            <DialogClose asChild>
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                disabled={loading || !selectedVariant}
+                onClick={() => {
+                  addToCart(selectedVariant!, quantity)
+                  router.push("/my-cart")
+                }}
+              >
+                Buy Now
+              </Button>
+            </DialogClose>
           )}
         </div>
       </DialogContent>

@@ -18,7 +18,7 @@ export function CarouselComponent() {
             ]}
         >
             <CarouselContent>
-                {Array.from({ length: 3 }).map((_, index) => (
+                {Array.from({ length: 5 }).map((_, index) => (
                     <CarouselItem key={index} className="w-full">
                         <Card className="w-full h-[40vh]">
                             <CardContent className="flex items-center justify-center p-0">

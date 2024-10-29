@@ -13,11 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
-import { useEcommerce } from "@/contexts/EcommerceContext"
+import { Product, useEcommerce } from "@/contexts/EcommerceContext"
 import { useAuth } from "@/contexts/AuthContext"
+import { ProductDialogButton } from "./product-dialog-button"
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [searchSelectedProduct, setSearchSelectedProduct] = useState<Product | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
   const { cart, products } = useEcommerce();
@@ -69,6 +71,7 @@ export default function Header() {
                     onClick={() => {
                       setSearchQuery(product.product_name)
                       setShowSuggestions(false)
+                      setSearchSelectedProduct(product)
                     }}
                   >
                     {product.product_name}
@@ -137,6 +140,17 @@ export default function Header() {
           </DropdownMenu>
         </div>
       </div>
+      {searchSelectedProduct && (
+        <ProductDialogButton 
+          product={searchSelectedProduct}
+          isOpen={searchSelectedProduct !== null}
+          onClose={() => setSearchSelectedProduct(null)}
+        >
+          <div className="sr-only">
+            Product Dialog
+          </div>
+        </ProductDialogButton>
+      )}
     </header>
   )
 }
