@@ -309,6 +309,9 @@ BEGIN
     DECLARE v_last_name VARCHAR(255);
     DECLARE v_customer_name VARCHAR(255);
 
+    -- Start transaction
+    START TRANSACTION;
+
     -- Step 1: Retrieve the user's email, phone number, address, first name, and last name from the User table
     SELECT email, phone_number, address, first_name, last_name
     INTO v_contact_email, v_contact_phone, v_delivery_address, v_first_name, v_last_name
@@ -325,25 +328,28 @@ BEGIN
     -- Step 4: Get the order_id of the newly created order
     SET p_order_id = LAST_INSERT_ID();
 
-    -- Step 4: Move items from Cart to OrderItem and calculate total amount
+    -- Step 5: Move items from Cart to OrderItem and calculate total amount
     INSERT INTO OrderItem (order_id, variant_id, quantity, price)
     SELECT p_order_id, c.variant_id, c.quantity, v.price
     FROM Cart c
     JOIN Variant v ON c.variant_id = v.variant_id
     WHERE c.user_id = p_user_id;
 
-    -- Step 5: Calculate total amount
+    -- Step 6: Calculate total amount
     SELECT SUM(oi.price * oi.quantity) INTO v_total_amount
     FROM OrderItem oi
     WHERE oi.order_id = p_order_id;
 
-    -- Step 6: Update the total_amount in the Order table
+    -- Step 7: Update the total_amount in the Order table
     UPDATE `Order`
     SET total_amount = v_total_amount
     WHERE order_id = p_order_id;
 
-    -- Step 7: Clear the Cart for the user
+    -- Step 8: Clear the Cart for the user
     DELETE FROM Cart WHERE user_id = p_user_id;
+
+    -- If all operations are successful, commit the transaction
+    COMMIT;
 END$$
 
 
@@ -399,6 +405,9 @@ BEGIN
 
     -- Declare continue handler for cursor
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    -- Start transaction
+    START TRANSACTION;
 
     -- Check if the user is the owner of the order
     IF NOT EXISTS (
@@ -456,6 +465,10 @@ BEGIN
         order_status = 'Confirmed',  -- Updated status to 'Confirmed'
         updated_at = NOW()
     WHERE order_id = orderId;
+
+    -- Commit the transaction if everything is successful
+    COMMIT;
+
 END$$
 
 
