@@ -2064,3 +2064,33 @@ VALUES
 UPDATE `Variant` 
 SET interested = interested + 5
 WHERE `variant_id` = 1;  -- 5 people are interested in Samsung Galaxy S21
+
+
+
+delimiter $$
+
+DROP EVENT IF EXISTS `2minutes__cancel_processing_orders`;
+
+CREATE EVENT `2minutes__cancel_processing_orders`
+ON SCHEDULE
+    EVERY 2 MINUTE
+DO
+BEGIN
+    START TRANSACTION;
+
+        UPDATE Inventory i
+        JOIN OrderItem oi ON i.variant_id = oi.variant_id
+        JOIN `Order` o ON oi.order_id = o.order_id
+        SET i.quantity_available = i.quantity_available + oi.quantity,
+            o.order_status = 'Failed'
+        WHERE o.order_status = 'Processing'
+        AND o.updated_at + INTERVAL 2 MINUTE <= CURRENT_TIMESTAMP();
+        
+    COMMIT;
+END$$
+
+-- Added indexes for optimization
+ALTER TABLE `Order` 
+ADD INDEX `idx_order_status_updated_at` (order_status, updated_at);
+
+delimiter ;
