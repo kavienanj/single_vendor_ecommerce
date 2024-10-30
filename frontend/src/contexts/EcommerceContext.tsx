@@ -70,14 +70,22 @@ export interface Order {
   }[]
 }
 
+interface FetchFilteredProductsParams {
+	categoryId?: number;
+	sort?: 'price' | 'name';
+	order?: 'asc' | 'desc';
+	search?: string;
+	limit?: number;
+}
+
 // Define the shape of the context state
 interface EcommerceContextState {
 	cart: CartItem[];
-	products: Product[];
 	categories: Category[];
 	addToCart: (variant: Variant, quantity: number) => void;
 	removeFromCart: (variantId: number) => void;
 	fetchProductWithVariants: (productId: number) => Promise<ProductWithVarients>;
+	fetchFilteredProducts: (params: FetchFilteredProductsParams) => Promise<Product[]>;
 	callPostCheckout: () => void;
 }
 
@@ -87,19 +95,18 @@ const EcommerceContext = createContext<EcommerceContextState | undefined>(undefi
 // Create the provider component
 export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 	const [cart, setCart] = useState<CartItem[]>([]);
-	const [products, setProducts] = useState<Product[]>([]);
 	const [categories, setCategories] = useState<Category[]>([]);
 	const { user } = useAuth();
 
-	// Fetch products and categories from an API or other source
-	const fetchProductsAndCategories = async () => {
-		// Replace with your actual data fetching logic
-		const fetchedProducts = await apiClient.get('/products').then(res => res.data);
+	const fetchCategories = async () => {
 		const fetchedCategories = await apiClient.get('/category').then(res => res.data);
-
-		setProducts(fetchedProducts);
 		setCategories(fetchedCategories);
 	};
+
+	const fetchFilteredProducts = async (params: FetchFilteredProductsParams) => {
+		const filteredProducts = await apiClient.get('/products', { params }).then(res => res.data);
+		return filteredProducts;
+	}
 
 	const fetchUserCart = async () => {
 		const cart = await apiClient.get(`/cart`).then(res => res.data);
@@ -123,7 +130,6 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 
 	const callPostCheckout = async () => {
 		setCart([]);
-		fetchProductsAndCategories();
 		fetchUserCart().then(cart => {
 			setCart(cart);
 		});
@@ -154,7 +160,7 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 	};
 
 	useEffect(() => {
-		fetchProductsAndCategories();
+		fetchCategories();
 		if (user) {
 			fetchUserCart().then(cart => {
 				setCart(cart);
@@ -165,11 +171,11 @@ export const EcommerceProvider = ({ children }: { children: ReactNode }) => {
 	return (
 		<EcommerceContext.Provider value={{ 
 			cart,
-			products,
 			categories,
 			addToCart,
 			removeFromCart,
 			fetchProductWithVariants,
+			fetchFilteredProducts,
 			callPostCheckout,
 		}}>
 			{children}

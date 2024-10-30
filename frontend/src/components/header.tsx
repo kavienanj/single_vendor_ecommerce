@@ -13,19 +13,35 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
-import { useEcommerce } from "@/contexts/EcommerceContext"
+import { Product, useEcommerce } from "@/contexts/EcommerceContext"
 import { useAuth } from "@/contexts/AuthContext"
+import { ProductDialogButton } from "./product-dialog-button"
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [searchSelectedProduct, setSearchSelectedProduct] = useState<Product | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
-  const { cart, products } = useEcommerce();
+  const { cart, fetchFilteredProducts } = useEcommerce();
+  const [products, setProducts] = useState<Product[]>([])
   const { user, logout, isAdmin, isGuest, isCustomer } = useAuth();
 
-  const searchSuggestions = products.filter(product =>
-    product.product_name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const loadFilteredProducts = async () => {
+    const response = await fetchFilteredProducts({
+      search: searchQuery,
+    });
+    setProducts(response);
+  }
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      loadFilteredProducts();
+    }, 500); // Wait 500ms after the last keystroke
+
+    return () => {
+      clearTimeout(handler); // Cleanup the timeout if searchQuery changes
+    };
+  }, [searchQuery])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -62,13 +78,14 @@ export default function Header() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             {showSuggestions && searchQuery && (
               <div className="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg max-h-60 overflow-auto">
-                {searchSuggestions.map((product) => (
+                {products.map((product) => (
                   <div
                     key={product.product_id}
                     className="p-2 hover:bg-gray-100 cursor-pointer"
                     onClick={() => {
                       setSearchQuery(product.product_name)
                       setShowSuggestions(false)
+                      setSearchSelectedProduct(product)
                     }}
                   >
                     {product.product_name}
@@ -137,6 +154,17 @@ export default function Header() {
           </DropdownMenu>
         </div>
       </div>
+      {searchSelectedProduct && (
+        <ProductDialogButton 
+          product={searchSelectedProduct}
+          isOpen={searchSelectedProduct !== null}
+          onClose={() => setSearchSelectedProduct(null)}
+        >
+          <div className="sr-only">
+            Product Dialog
+          </div>
+        </ProductDialogButton>
+      )}
     </header>
   )
 }

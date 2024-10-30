@@ -70,12 +70,14 @@ exports.getTopMonthsForProductSales = (product_id) => {
     });
 };
 
+
+
 // Most Orders Model
 exports.getCategoryWithMostOrders = () => {
     return new Promise((resolve, reject) => {
         const query = `
             SELECT 
-                c.category_name,
+                pc.category_name AS parent_category_name,
                 COUNT(oi.order_item_id) AS total_orders
             FROM 
                 OrderItem oi
@@ -87,21 +89,25 @@ exports.getCategoryWithMostOrders = () => {
                 Product_Category_Match pcm ON p.product_id = pcm.product_id
             JOIN 
                 Category c ON pcm.category_id = c.category_id
+            JOIN 
+                ParentCategory_Match pcmatch ON c.category_id = pcmatch.category_id
+            JOIN 
+                Category pc ON pcmatch.parent_category_id = pc.category_id
             GROUP BY 
-                c.category_id
+                pc.category_id
             ORDER BY 
                 total_orders DESC;
-            
         `;
 
         db.query(query, [], (err, result) => {
             if (err) {
                 return reject(err);
             }
-            resolve(result);  // Return the result with the top category
+            resolve(result);  // Return the result with the top parent categories
         });
     });
 };
+
 
 // Most Selling Product Model
 

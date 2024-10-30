@@ -15,10 +15,11 @@ exports.addProduct = async (req, res) => {
     }
 };
 
-// Controller function to get all products
+// Controller function to get all products with filters, sorting, and limiting
 exports.getAllProducts = async (req, res) => {
     try {
-        const response = await model.getAllProducts();
+        const { categoryId, search, sort, order, limit } = req.query;  // Extract query parameters
+        const response = await model.getAllProducts({ categoryId, search, sort, order, limit });
         res.json(response);
     } catch (err) {
         console.error('Error fetching products:', err);

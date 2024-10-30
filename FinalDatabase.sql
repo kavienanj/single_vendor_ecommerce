@@ -309,6 +309,9 @@ BEGIN
     DECLARE v_last_name VARCHAR(255);
     DECLARE v_customer_name VARCHAR(255);
 
+    -- Start transaction
+    START TRANSACTION;
+
     -- Step 1: Retrieve the user's email, phone number, address, first name, and last name from the User table
     SELECT email, phone_number, address, first_name, last_name
     INTO v_contact_email, v_contact_phone, v_delivery_address, v_first_name, v_last_name
@@ -325,25 +328,28 @@ BEGIN
     -- Step 4: Get the order_id of the newly created order
     SET p_order_id = LAST_INSERT_ID();
 
-    -- Step 4: Move items from Cart to OrderItem and calculate total amount
+    -- Step 5: Move items from Cart to OrderItem and calculate total amount
     INSERT INTO OrderItem (order_id, variant_id, quantity, price)
     SELECT p_order_id, c.variant_id, c.quantity, v.price
     FROM Cart c
     JOIN Variant v ON c.variant_id = v.variant_id
     WHERE c.user_id = p_user_id;
 
-    -- Step 5: Calculate total amount
+    -- Step 6: Calculate total amount
     SELECT SUM(oi.price * oi.quantity) INTO v_total_amount
     FROM OrderItem oi
     WHERE oi.order_id = p_order_id;
 
-    -- Step 6: Update the total_amount in the Order table
+    -- Step 7: Update the total_amount in the Order table
     UPDATE `Order`
     SET total_amount = v_total_amount
     WHERE order_id = p_order_id;
 
-    -- Step 7: Clear the Cart for the user
+    -- Step 8: Clear the Cart for the user
     DELETE FROM Cart WHERE user_id = p_user_id;
+
+    -- If all operations are successful, commit the transaction
+    COMMIT;
 END$$
 
 
@@ -399,6 +405,9 @@ BEGIN
 
     -- Declare continue handler for cursor
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    -- Start transaction
+    START TRANSACTION;
 
     -- Check if the user is the owner of the order
     IF NOT EXISTS (
@@ -456,6 +465,10 @@ BEGIN
         order_status = 'Confirmed',  -- Updated status to 'Confirmed'
         updated_at = NOW()
     WHERE order_id = orderId;
+
+    -- Commit the transaction if everything is successful
+    COMMIT;
+
 END$$
 
 
@@ -977,7 +990,7 @@ VALUES
 ('Google Pixel 6 Smartphone', 'Google\'s latest smartphone', 'SKU013', 0.178, 699.99, 'https://m.media-amazon.com/images/I/71AFAa4sgbL._AC_SL1500_.jpg', NOW(), NOW()),   -- ID 13
 ('Anker PowerCore Portable Charger', 'High-capacity portable charger', 'SKU014', 0.355, 49.99, 'https://flashdealfinder.com/wp-content/uploads/2020/01/Anker-Charging-Accessories.jpg', NOW(), NOW()), -- ID 14
 ('Nintendo Switch Console', 'Hybrid gaming console', 'SKU015', 0.88, 299.99, 'https://i5.walmartimages.com/asr/41b40bbc-8c9c-4a1d-88ee-b0be32f21922.04219b45da8d33d3c3d9c3b2e8c7cfa1.jpeg', NOW(), NOW()),   -- ID 15
-('Apple iPad Air', 'Lightweight and powerful tablet', 'SKU016', 0.46, 599.99, 'https://www.wearesync.co.uk/wp-content/uploads/2020/09/ipad-air-rose-gold.jpg', NOW(), NOW()),          -- ID 16
+('Apple iPad Air', 'Lightweight and powerful tablet', 'SKU016', 0.46, 599.99, 'https://idealz.lk/wp-content/uploads/2024/06/iPad-Air-6-Blue.jpg', NOW(), NOW()),          -- ID 16
 ('Fitbit Versa 3 Smartwatch', 'Fitness smartwatch', 'SKU017', 0.039, 229.95, 'https://www.pointekonline.com/wp-content/uploads/2021/08/fitbit-versa-3.png', NOW(), NOW()),      -- ID 17
 ('GoPro HERO9 Camera', 'Action camera with 5K video', 'SKU018', 0.158, 399.99, 'https://pic.clubic.com/v1/images/1845895/raw', NOW(), NOW()),      -- ID 18
 ('Samsung Galaxy Tab S7', 'High-end Android tablet', 'SKU019', 0.498, 649.99, 'https://th.bing.com/th/id/R.3fc3bb5fb0e49cc7f8d3a0ac407f275a?rik=gkjqiUAvQSI1cw&pid=ImgRaw&r=0', NOW(), NOW()),     -- ID 19
@@ -2060,6 +2073,51 @@ VALUES
 (6, 16, 0, 1, 1499.99),  -- John's order has 1 Sony SRS-XB43
 (7, 12, 0, 1, 799.99),  -- Nick's order has 1 Samsung Galaxy A52
 (8, 18, 0, 1, 299.99);   -- Pilip's order has 1 OnePlus 11
+
+-- new insert statements for top product category 
+
+INSERT INTO `Order` (`customer_id`, `contact_email`, `contact_phone`, `delivery_method`, `delivery_location_id`, `payment_method`, `total_amount`, `order_status`, `purchased_time`, `delivery_estimate`, `created_at`, `updated_at`)
+VALUES 
+(2, 'alice@example.com', '555-987-1234', 'delivery', 2, 'cash_on_delivery', 549.99, 'Completed', '2024-02-01 11:00:00', 5, NOW(), NOW()),
+(3, 'bob@example.com', '444-333-9999', 'store_pickup', 3, 'card', 249.99, 'Shipped', '2024-03-04 13:15:00', 3, NOW(), NOW()),
+(4, 'claire@example.com', '333-444-5555', 'delivery', 1, 'card', 799.99, 'Processing', '2024-04-06 14:00:00', 6, NOW(), NOW()),
+(5, 'daniel@example.com', '111-222-3333', 'store_pickup', 2, 'cash_on_delivery', 99.99, 'Confirmed', '2024-05-10 09:30:00', 2, NOW(), NOW()),
+(2, 'emma@example.com', '999-888-7777', 'delivery', 3, 'card', 649.99, 'Failed', '2024-06-15 17:20:00', 4, NOW(), NOW()),
+(3, 'alice@example.com', '555-987-1234', 'store_pickup', 4, 'card', 129.99, 'Processing', '2024-08-12 16:50:00', 2, NOW(), NOW()),
+(4, 'bob@example.com', '444-333-9999', 'delivery', 1, 'cash_on_delivery', 549.99, 'Completed', '2024-09-18 12:00:00', 3, NOW(), NOW()),
+(5, 'claire@example.com', '333-444-5555', 'store_pickup', 2, 'card', 299.99, 'Completed', '2024-10-21 13:30:00', 5, NOW(), NOW()),
+(2, 'daniel@example.com', '111-222-3333', 'delivery', 3, 'card', 799.99, 'Shipped', '2024-11-03 15:00:00', 4, NOW(), NOW()),
+(3, 'emma@example.com', '999-888-7777', 'store_pickup', 4, 'card', 399.99, 'Confirmed', '2024-12-07 11:45:00', 1, NOW(), NOW());
+
+
+INSERT INTO `OrderItem` (order_id, variant_id, discount, quantity, price) 
+VALUES 
+(9, 7, 0, 1, 549.99),    -- Alice's order with JBL Flip 6
+(10, 4, 10, 1, 299.99),  -- Bob's order with iPhone 14 Pro with discount
+(11, 8, 5, 2, 399.99),   -- Claire's order with 2 Sony SRS-XB43s with discount
+(12, 5, 0, 1, 129.99),   -- Daniel's order with OnePlus 11
+(13, 6, 0, 1, 649.99),   -- Emma's order with Samsung Galaxy A52
+(9, 3, 0, 1, 249.99),    -- Alice's order with Sony SRS-XB43
+(10, 2, 0, 1, 399.99),   -- Bob's order with MacBook Air M2
+(11, 12, 15, 1, 299.99), -- Claire's order with discounted Galaxy A52
+(12, 16, 0, 1, 149.99),  -- Daniel's order with Sony SRS-XB43
+(13, 14, 0, 1, 389.99);  -- Emma's order with Bose SoundLink Revolve
+
+
+INSERT INTO `OrderItem` (order_id, variant_id, discount, quantity, price) 
+VALUES 
+(9, 40, 0, 1, 549.99),    -- Alice's order with JBL Flip 6 (variant_id updated to 40)
+(10, 41, 10, 1, 299.99),  -- Bob's order with iPhone 14 Pro with discount (variant_id updated to 41)
+(11, 42, 5, 2, 399.99),   -- Claire's order with 2 Sony SRS-XB43s with discount (variant_id updated to 42)
+(12, 43, 0, 1, 129.99),   -- Daniel's order with OnePlus 11 (variant_id updated to 43)
+(13, 44, 0, 1, 649.99),   -- Emma's order with Samsung Galaxy A52 (variant_id updated to 44)
+(9, 45, 0, 1, 249.99),    -- Alice's order with Sony SRS-XB43 (variant_id updated to 45)
+(10, 46, 0, 1, 399.99),   -- Bob's order with MacBook Air M2 (variant_id updated to 46)
+(11, 47, 15, 1, 299.99),  -- Claire's order with discounted Galaxy A52 (variant_id updated to 47)
+(12, 48, 0, 1, 149.99),   -- Daniel's order with Sony SRS-XB43 (variant_id updated to 48)
+(13, 49, 0, 1, 389.99);   -- Emma's order with Bose SoundLink Revolve (variant_id updated to 49)
+
+-- ends here
 
 UPDATE `Variant` 
 SET interested = interested + 5
