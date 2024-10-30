@@ -191,6 +191,8 @@ CREATE TABLE `Cart` (
   on update cascade
 );
 
+CREATE INDEX idx_userid_variantid ON `cart` (`user_id`, `variant_id`);
+
 delimiter $$
 create trigger increase_interested
 after insert on Cart
