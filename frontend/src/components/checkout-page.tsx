@@ -134,7 +134,7 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
-  if (error) {
+  if (error || !order) {
     return (
       <div className="h-[50vh] flex flex-col items-center justify-center space-y-4 mt-8">
         {error}
@@ -145,12 +145,19 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
     );
   }
 
-  if (order?.order_status === "Confirmed") {
+  if (order.order_status !== "Processing") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold mb-4">Order Placed</h1>
-          <p>Your order has been placed successfully!</p>
+          <h1 className="text-2xl font-bold mb-4">
+            Order {order.order_status}
+          </h1>
+          {order.order_status === "Failed" && (
+            <p>There was an error processing your order. Please try again.</p>
+          )}
+          {order.order_status !== "Failed" && (
+            <p>Your order has been placed successfully!</p>
+          )}
           <p>Order ID: {order.order_id}</p>
           <p>Total Amount: ${order.total_amount.toFixed(2)}</p>
           <p>Delivery Estimate: {order.delivery_estimate}</p>

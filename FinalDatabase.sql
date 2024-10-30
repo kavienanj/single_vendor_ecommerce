@@ -24,8 +24,8 @@ CREATE TABLE `ParentCategory_Match` (
 );
 
 -- Add indexes to improve performance
-CREATE INDEX idx_category_id ON `ParentCategory_Match` (`category_id`);
-CREATE INDEX idx_parent_category_id ON `ParentCategory_Match` (`parent_category_id`);
+CREATE INDEX idx_parent_category_match_category_id ON `ParentCategory_Match` (`category_id`);
+CREATE INDEX idx_parent_category_match_parent_category_id ON `ParentCategory_Match` (`parent_category_id`);
 
 
 CREATE TABLE `Warehouse` (
@@ -77,8 +77,8 @@ CREATE TABLE `Product_Category_Match` (
 );
 
 -- Add indexes to improve performance
-CREATE INDEX idx_product_id ON `Product_Category_Match` (`product_id`);
-CREATE INDEX idx_category_id ON `Product_Category_Match` (`category_id`);
+CREATE INDEX idx_product_category_match_product_id ON `Product_Category_Match` (`product_id`);
+CREATE INDEX idx_product_category_match_category_id ON `Product_Category_Match` (`category_id`);
 
 
 CREATE TABLE `Variant` (
@@ -108,6 +108,7 @@ CREATE TABLE `Custom_Attribute` (
   FOREIGN KEY (`product_id`) REFERENCES `Product`(`product_id`)
 );
 
+CREATE INDEX idx_custom_attribute_product_id ON `Custom_Attribute` (`product_id`);
 
 CREATE TABLE `Custom_Attribute_Value` (
   `variant_id` INT,
@@ -118,6 +119,8 @@ CREATE TABLE `Custom_Attribute_Value` (
   FOREIGN KEY (`attribute_id`) REFERENCES `Custom_Attribute`(`attribute_id`)
 );
 
+CREATE INDEX idx_custom_attribute_value_variant_id ON `Custom_Attribute_Value` (`variant_id`);
+CREATE INDEX idx_custom_attribute_value_attribute_id ON `Custom_Attribute_Value` (`attribute_id`);
 
 CREATE TABLE `Inventory` (
   `inventory_id` INT AUTO_INCREMENT,
@@ -191,7 +194,7 @@ CREATE TABLE `Cart` (
   on update cascade
 );
 
-CREATE INDEX idx_userid_variantid ON `cart` (`user_id`, `variant_id`);
+CREATE INDEX idx_cart_user_id ON Cart(user_id);
 
 delimiter $$
 create trigger increase_interested
@@ -472,6 +475,31 @@ BEGIN
     COMMIT;
 
 END$$
+
+
+-- DROP EVENT IF EXISTS `30minutes__cancel_processing_orders`;
+
+CREATE EVENT `30minutes__cancel_processing_orders`
+ON SCHEDULE
+    EVERY 30 MINUTE
+DO
+BEGIN
+    START TRANSACTION;
+
+        UPDATE Inventory i
+        JOIN OrderItem oi ON i.variant_id = oi.variant_id
+        JOIN `Order` o ON oi.order_id = o.order_id
+        SET i.quantity_available = i.quantity_available + oi.quantity,
+            o.order_status = 'Failed'
+        WHERE o.order_status = 'Processing'
+        AND o.updated_at + INTERVAL 30 MINUTE <= CURRENT_TIMESTAMP();
+
+    COMMIT;
+END$$
+
+-- Added indexes for optimization
+ALTER TABLE `Order` 
+ADD INDEX `idx_order_status_updated_at` (order_status, updated_at);
 
 
 CREATE PROCEDURE ADD_WAREHOUSE (location VARCHAR(255) , capacity INT)
@@ -2124,33 +2152,3 @@ VALUES
 UPDATE `Variant` 
 SET interested = interested + 5
 WHERE `variant_id` = 1;  -- 5 people are interested in Samsung Galaxy S21
-
-
-
-delimiter $$
-
-DROP EVENT IF EXISTS `2minutes__cancel_processing_orders`;
-
-CREATE EVENT `2minutes__cancel_processing_orders`
-ON SCHEDULE
-    EVERY 2 MINUTE
-DO
-BEGIN
-    START TRANSACTION;
-
-        UPDATE Inventory i
-        JOIN OrderItem oi ON i.variant_id = oi.variant_id
-        JOIN `Order` o ON oi.order_id = o.order_id
-        SET i.quantity_available = i.quantity_available + oi.quantity,
-            o.order_status = 'Failed'
-        WHERE o.order_status = 'Processing'
-        AND o.updated_at + INTERVAL 2 MINUTE <= CURRENT_TIMESTAMP();
-        
-    COMMIT;
-END$$
-
--- Added indexes for optimization
-ALTER TABLE `Order` 
-ADD INDEX `idx_order_status_updated_at` (order_status, updated_at);
-
-delimiter ;

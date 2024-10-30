@@ -133,8 +133,8 @@ export function HomePageComponent() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.slice(0, parseInt(showCount)).map((product) => (
-              <Card key={product.product_id}>
-                <CardContent className="p-4">
+              <Card key={product.product_id} className="flex flex-col h-full">
+                <CardContent className="p-4 flex-grow">
                   <img
                     src={product.image_url}
                     alt={product.product_name}
