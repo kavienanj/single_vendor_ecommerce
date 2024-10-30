@@ -23,6 +23,8 @@ export interface VariantAttribute {
 export interface Variant {
 	variant_id: number;
 	variant_name: string;
+	product_id: number;
+	product_name: string;
 	image_url: string;
 	price: number;
 	quantity_available: number;
@@ -62,6 +64,8 @@ export interface Order {
   updated_at: string;
   items: {
     variant_id: number;
+	product_id: number;
+	product_name: string;
     price: number;
     quantity: number;
     total_price: number;

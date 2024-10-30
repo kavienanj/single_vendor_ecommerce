@@ -222,7 +222,7 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
           {order!.items.map((item) => (
             <div key={item.variant_id} className="flex justify-between">
               <span>
-                {item.variant_name} x {item.quantity}
+                {item.product_name} x {item.quantity}
               </span>
               <span>${(item.total_price).toFixed(2)}</span>
             </div>

@@ -49,7 +49,7 @@ export function CartPageComponent() {
                 <CardContent className="flex items-center p-4">
                   <img src={item.image_url} alt={item.variant_name} className="w-20 h-20 object-cover rounded-md mr-4" />
                   <div className="flex-grow">
-                    <h2 className="font-semibold">{item.variant_name}</h2>
+                    <h2 className="font-semibold">{item.product_name} ({item.variant_name})</h2>
                     <p className="text-sm text-gray-600">
                       {item.attributes.map(
                         (attr) => `${attr.attribute_name}: ${attr.attribute_value}`).join(", ")
@@ -99,7 +99,7 @@ export function CartPageComponent() {
                 <div className="space-y-2">
                   {cart.map((item) => (
                     <div key={item.variant_id} className="flex justify-between text-sm">
-                      <span>{item.variant_name} (x{item.quantity})</span>
+                      <span>{item.product_name} (x{item.quantity})</span>
                       <span>${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}

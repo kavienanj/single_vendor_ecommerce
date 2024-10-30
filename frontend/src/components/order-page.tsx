@@ -109,7 +109,7 @@ export function OrderPageComponent() {
                 <div className="space-y-2">
                   {order.items.slice(0, 2).map((item, index) => (
                     <div key={index} className="flex justify-between">
-                      <span>{item.variant_name}</span>
+                      <span>{item.product_name} ({item.variant_name})</span>
                       <span>x{item.quantity}</span>
                     </div>
                   ))}

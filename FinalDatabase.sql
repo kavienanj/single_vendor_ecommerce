@@ -741,6 +741,8 @@ CREATE PROCEDURE `ShowCartofUser` (
 BEGIN
     SELECT 
         v.variant_id,
+        v.product_id,
+        p.title as product_name,
         v.name as variant_name,
         v.price,
         v.image_url,
@@ -759,6 +761,7 @@ BEGIN
         ) AS attributes
     FROM variant v
     JOIN cart c ON v.variant_id = c.variant_id
+    JOIN product p ON v.product_id = p.product_id
     JOIN inventory i ON v.variant_id = i.variant_id
     WHERE c.user_id = p_user_id;
 END$$

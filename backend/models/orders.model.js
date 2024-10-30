@@ -52,6 +52,8 @@ exports.getOrderById = (orderId) => {
                 JSON_OBJECT(
                     'variant_id', v.variant_id,
                     'variant_name', v.name,
+                    'product_id', v.product_id,
+                    'product_name', p.title,
                     'price', ROUND(oi.price, 2),
                     'quantity', oi.quantity,
                     'quantity_available', inv.quantity_available,
@@ -62,6 +64,7 @@ exports.getOrderById = (orderId) => {
         JOIN OrderItem oi ON o.order_id = oi.order_id
         JOIN Variant v ON oi.variant_id = v.variant_id
         JOIN Inventory inv ON v.variant_id = inv.variant_id 
+        JOIN Product p ON v.product_id = p.product_id
         WHERE o.order_id = ?
         GROUP BY o.order_id;
     `
@@ -115,6 +118,8 @@ exports.getUserOrders = (userId) => {
         JSON_OBJECT(
             'variant_id', v.variant_id,
             'variant_name', v.name,
+            'product_id', v.product_id,
+            'product_name', p.title,
             'price', ROUND(oi.price, 2),
             'quantity', oi.quantity,
             'quantity_available', inv.quantity_available,
@@ -125,6 +130,7 @@ FROM \`Order\` o
 JOIN OrderItem oi ON o.order_id = oi.order_id
 JOIN Variant v ON oi.variant_id = v.variant_id
 JOIN Inventory inv ON v.variant_id = inv.variant_id 
+JOIN Product p ON v.product_id = p.product_id
 WHERE o.customer_id = ?
 GROUP BY o.order_id
 ORDER BY o.purchased_time DESC;
