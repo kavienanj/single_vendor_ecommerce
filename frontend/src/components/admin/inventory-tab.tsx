@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/services/axiosClient';
@@ -32,6 +33,8 @@ interface Variant {
 
 export function InventoryTab() {
 	const [products, setProducts] = useState<Variant[]>([]);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  const [selectedQuantity, setSelectedQuantity] = useState<number>(0);
 
 	const fetchProducts = async () => {
 		const fetchedProducts = await apiClient.get('/variant/').then(res => res.data);
@@ -86,12 +89,7 @@ export function InventoryTab() {
                 </TableCell>
                 <TableCell>${item.price.toFixed(2)}</TableCell>
                 <TableCell>
-                  <Input
-                    type="number"
-                    value={item.quantity_available}
-                    onChange={(e) => updateVarientStock(item.variant_id, parseInt(e.target.value))}
-                    className="w-16 p-1 text-right"
-                  />
+                  {item.quantity_available}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -103,6 +101,9 @@ export function InventoryTab() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => setSelectedVariant(item)}>
+                        Add/Remove Stock
+                      </DropdownMenuItem>
                       <DropdownMenuItem>Edit</DropdownMenuItem>
                       <DropdownMenuItem>View details</DropdownMenuItem>
                       <DropdownMenuSeparator />
@@ -115,6 +116,56 @@ export function InventoryTab() {
           </TableBody>
         </Table>
       </div>
+      <AlertDialog open={selectedVariant !== null} onOpenChange={() => {
+        setSelectedVariant(null)
+        setSelectedQuantity(0)
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add Stock</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-semibold">Product:</span> {selectedVariant?.product_name}
+              <br />
+              <span className="font-semibold">Variant:</span> {selectedVariant?.name}
+              <br />
+              <span className="font-semibold">Current Stock:</span> {selectedVariant?.quantity_available}
+              <br />
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Stock Quantity:</span>
+                <Input
+                  type="number"
+                  value={selectedQuantity}
+                  onChange={(e) => setSelectedQuantity(parseInt(e.target.value))}
+                  className="w-16 p-1 text-right"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className='bg-red-500' onClick={() => {
+              updateVarientStock(
+                selectedVariant!.variant_id, 
+                // Ensure stock does not go below 0
+                selectedVariant!.quantity_available - selectedQuantity < 0
+                  ? 0
+                  : selectedVariant!.quantity_available - selectedQuantity
+              )
+              setSelectedVariant(null)
+              setSelectedQuantity(0)
+            }}>
+              Remove Stock
+            </AlertDialogAction>
+            <AlertDialogAction onClick={() => {
+              updateVarientStock(selectedVariant!.variant_id, selectedVariant!.quantity_available + selectedQuantity)
+              setSelectedVariant(null)
+              setSelectedQuantity(0)
+            }}>
+              Add Stock
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

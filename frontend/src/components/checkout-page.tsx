@@ -70,6 +70,15 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
       setLoading(false);
     }
   }
+
+  async function refreshOrder() {
+    try {
+      const response = await apiClient.get(`/orders/${checkoutId}`);
+      setOrder(response.data.order);
+    } catch (error) {
+      console.error("An error occurred while fetching the order", error);
+    }
+  }
   
   async function fetchDeliveryLocations() {
     try {
@@ -99,7 +108,6 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
       });
       await fetchOrder();
       console.log(response.data);
-      alert("Order placed successfully!");
       setSubmitting(false);
     } catch (error) {
       console.error("An error occurred while placing the order", error);
@@ -114,6 +122,13 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
       fetchDeliveryLocations();
     }
   }, [user, loadingAuth]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshOrder();
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -165,7 +180,7 @@ export function CheckoutPageComponent({ checkoutId }: { checkoutId: number }) {
     }
     let allItemsAvailable = true;
     for (const item of order!.items) {
-      if (item.quantity > item.quantity_available) {
+      if (item.quantity_available <= 0) {
         allItemsAvailable = false;
         break;
       }

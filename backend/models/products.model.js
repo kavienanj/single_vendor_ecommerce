@@ -16,10 +16,11 @@ exports.createProduct = ({ title, description, sku, weight }) => {
     });
 }
 
-// Function to get all products
-exports.getAllProducts = () => {
+// Function to get all products with optional filters, sorting, and limiting
+exports.getAllProducts = ({ categoryId, search, sort, order, limit } = {}) => {
     return new Promise((resolve, reject) => {
-        const query = `
+        // Base query
+        let query = `
         SELECT 
             p.product_id as product_id,
             p.title AS product_name,
@@ -32,18 +33,58 @@ exports.getAllProducts = () => {
         FROM Product p
         JOIN Product_Category_Match pcm ON p.product_id = pcm.product_id
         JOIN Category c ON pcm.category_id = c.category_id
-        GROUP BY p.product_id
-        ORDER BY p.title;
-    `;
+        `;
 
-        db.query(query, (err, result) => {
+        // Optional filtering conditions
+        const conditions = [];
+        const params = [];
+
+        if (categoryId) {
+            conditions.push(`pcm.category_id = ?`);
+            params.push(Number(categoryId));
+        }
+
+        if (search) {
+            conditions.push(`p.title LIKE ?`);
+            params.push(`%${search}%`);
+        }
+
+        // Append conditions to the query
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        // Group by clause
+        query += ` GROUP BY p.product_id`;
+
+        // Sorting by specified column and order
+        let sortColumn = 'p.title'; // Default to sorting by name
+        if (sort === 'price') {
+            sortColumn = 'p.default_price';
+        }
+
+        let sortOrder = 'ASC'; // Default to ascending order
+        if (order && (order.toLowerCase() === 'asc' || order.toLowerCase() === 'desc')) {
+            sortOrder = order.toUpperCase();
+        }
+
+        query += ` ORDER BY ${sortColumn} ${sortOrder}`;
+
+        // Limiting the number of results
+        if (limit && !isNaN(limit)) {
+            query += ` LIMIT ?`;
+            params.push(Number(limit));
+        }
+
+        // Execute the query with params
+        db.query(query, params, (err, result) => {
             if (err) {
                 return reject(err);
             }
             resolve(result);
         });
     });
-}
+};
 
 // Function to update a product
 exports.updateProduct = ({ id, title, description, sku, weight }) => {
