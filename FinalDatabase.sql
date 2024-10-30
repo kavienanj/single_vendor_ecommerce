@@ -990,7 +990,7 @@ VALUES
 ('Google Pixel 6 Smartphone', 'Google\'s latest smartphone', 'SKU013', 0.178, 699.99, 'https://m.media-amazon.com/images/I/71AFAa4sgbL._AC_SL1500_.jpg', NOW(), NOW()),   -- ID 13
 ('Anker PowerCore Portable Charger', 'High-capacity portable charger', 'SKU014', 0.355, 49.99, 'https://flashdealfinder.com/wp-content/uploads/2020/01/Anker-Charging-Accessories.jpg', NOW(), NOW()), -- ID 14
 ('Nintendo Switch Console', 'Hybrid gaming console', 'SKU015', 0.88, 299.99, 'https://i5.walmartimages.com/asr/41b40bbc-8c9c-4a1d-88ee-b0be32f21922.04219b45da8d33d3c3d9c3b2e8c7cfa1.jpeg', NOW(), NOW()),   -- ID 15
-('Apple iPad Air', 'Lightweight and powerful tablet', 'SKU016', 0.46, 599.99, 'https://www.wearesync.co.uk/wp-content/uploads/2020/09/ipad-air-rose-gold.jpg', NOW(), NOW()),          -- ID 16
+('Apple iPad Air', 'Lightweight and powerful tablet', 'SKU016', 0.46, 599.99, 'https://idealz.lk/wp-content/uploads/2024/06/iPad-Air-6-Blue.jpg', NOW(), NOW()),          -- ID 16
 ('Fitbit Versa 3 Smartwatch', 'Fitness smartwatch', 'SKU017', 0.039, 229.95, 'https://www.pointekonline.com/wp-content/uploads/2021/08/fitbit-versa-3.png', NOW(), NOW()),      -- ID 17
 ('GoPro HERO9 Camera', 'Action camera with 5K video', 'SKU018', 0.158, 399.99, 'https://pic.clubic.com/v1/images/1845895/raw', NOW(), NOW()),      -- ID 18
 ('Samsung Galaxy Tab S7', 'High-end Android tablet', 'SKU019', 0.498, 649.99, 'https://th.bing.com/th/id/R.3fc3bb5fb0e49cc7f8d3a0ac407f275a?rik=gkjqiUAvQSI1cw&pid=ImgRaw&r=0', NOW(), NOW()),     -- ID 19
