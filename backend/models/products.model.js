@@ -68,8 +68,8 @@ exports.getAllProducts = ({ categoryId, search, sort, order, limit } = {}) => {
 
         // Whitelist for sort order
         let sortOrder = 'ASC'; // Default
-        if (typeof order === 'string' && (order.toLowerCase() === 'asc' || order.toLowerCase() === 'desc')) {
-            sortOrder = order.toUpperCase();
+        if (typeof order === 'string' && order.toLowerCase() === 'desc') {
+            sortOrder = 'DESC';
         }
 
         // Only use safe, whitelisted values
