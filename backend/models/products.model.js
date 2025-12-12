@@ -58,16 +58,21 @@ exports.getAllProducts = ({ categoryId, search, sort, order, limit } = {}) => {
         query += ` GROUP BY p.product_id`;
 
         // Sorting by specified column and order
-        let sortColumn = 'p.title'; // Default to sorting by name
-        if (sort === 'price') {
-            sortColumn = 'p.default_price';
-        }
+        // Whitelist for sort columns
+        const SORT_COLUMNS = {
+            'price': 'p.default_price',
+            'title': 'p.title'
+        };
+        // Select safe column name or fallback to default
+        let sortColumn = SORT_COLUMNS[String(sort).toLowerCase()] || 'p.title';
 
-        let sortOrder = 'ASC'; // Default to ascending order
-        if (order && (order.toLowerCase() === 'asc' || order.toLowerCase() === 'desc')) {
+        // Whitelist for sort order
+        let sortOrder = 'ASC'; // Default
+        if (typeof order === 'string' && (order.toLowerCase() === 'asc' || order.toLowerCase() === 'desc')) {
             sortOrder = order.toUpperCase();
         }
 
+        // Only use safe, whitelisted values
         query += ` ORDER BY ${sortColumn} ${sortOrder}`;
 
         // Limiting the number of results
